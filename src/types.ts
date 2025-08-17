@@ -1,0 +1,42 @@
+// src/types.ts
+
+// The Winery and Region interfaces remain the same
+export interface Winery {
+  id: string | number;
+  name: string;
+  coords: { lat: number; lng: number };
+  tags: string[];
+  type: 'winery' | 'distillery' | 'custom';
+  region: string;
+  openingHours: { [key: number]: { open: number; close: number } | null };
+  visitDuration: number;
+  address?: string;
+}
+
+export interface Region {
+  name:string;
+  center: { lat: number; lng: number };
+}
+
+export interface RegionBoundary {
+  name: string;
+  paths: { lat: number; lng: number }[];
+}
+
+// This interface is now more specific to handle the Firestore Timestamp
+export interface SavedTour {
+  id: string;
+  userId: string;
+  tourName: string;
+  regionName: string;
+  startTime: string;
+  stops: { 
+    wineryId: string | number; 
+    duration: number;
+    customData?: Winery; 
+  }[];
+  createdAt: { // This is how Firestore Timestamps are structured
+    seconds: number;
+    nanoseconds: number;
+  };
+}
