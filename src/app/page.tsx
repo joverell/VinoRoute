@@ -1,6 +1,8 @@
-// src/app/page.tsx
-import HomePage from '@/components/HomePage'; // We will create this component
+'use client';
+import dynamic from 'next/dynamic'
+
+const HomePage = dynamic(() => import('@/components/HomePage'), { ssr: false })
 
 export default function Page() {
-  return <HomePage />;
+  return <HomePage />
 }

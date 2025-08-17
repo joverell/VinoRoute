@@ -1,15 +1,26 @@
-import { Winery } from "@/data/wineries";
+import { Winery } from "@/types";
 
 interface WineryCardProps {
   winery: Winery;
   onAddToTrip: (winery: Winery) => void;
-  onRemoveFromTrip: (wineryId: number) => void;
+  onRemoveFromTrip: (wineryId: number | string) => void;
   isInTrip: boolean;
+  onSelect: (winery: Winery) => void;
 }
 
-export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isInTrip }: WineryCardProps) {
+export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isInTrip, onSelect }: WineryCardProps) {
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) {
+      return;
+    }
+    onSelect(winery);
+  };
+
   return (
-    <div className="p-4 bg-white rounded-lg shadow-md transition-colors">
+    <div
+      className="p-4 bg-white rounded-lg shadow-md transition-colors cursor-pointer hover:bg-teal-50"
+      onClick={handleCardClick}
+    >
       <div>
         <h3 className="text-lg font-bold text-gray-800">{winery.name}</h3>
         <div className="flex flex-wrap gap-2 mt-2">
