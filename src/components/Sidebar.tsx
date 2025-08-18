@@ -55,7 +55,6 @@ interface SidebarProps {
   onDurationChange: (wineryId: number | string, newDuration: number) => void;
   selectedWinery: Winery | null;
   onSelectWinery: (winery: Winery | null) => void;
-  onWineryRated: () => void;
   onAddCustomStop: (name: string, address: string, duration: number) => void;
   selectedRegion: Region;
   onRegionSelection: (value: string) => void;
@@ -72,20 +71,17 @@ interface SidebarProps {
   onSearchTermChange: (term: string) => void;
   searchTags: string[];
   onTagFilterChange: (tag: string) => void;
-  ratingFilter: number;
-  onRatingFilterChange: (rating: number) => void;
 }
 
 export default function Sidebar({
   user, onSaveTour, savedTours, onLoadTour, onDeleteTour,
   tripStops, onAddToTrip, onRemoveFromTrip, onReorderWineries, itinerary,
   startTime, onStartTimeChange, onOptimizeRoute, defaultDuration,
-  onDefaultDurationChange, onDurationChange, selectedWinery, onSelectWinery, onWineryRated, onAddCustomStop,
+  onDefaultDurationChange, onDurationChange, selectedWinery, onSelectWinery, onAddCustomStop,
   selectedRegion, onRegionSelection, includeDistilleries, onToggleDistilleries,
   availableWineries, regions, prepopulatedStop, onClearPrepopulatedStop,
   showRegionOverlay, onToggleRegionOverlay, filterMode,
-  searchTerm, onSearchTermChange, searchTags, onTagFilterChange,
-  ratingFilter, onRatingFilterChange
+  searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
@@ -285,7 +281,6 @@ export default function Sidebar({
                 onRemoveFromTrip={onRemoveFromTrip}
                 isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
                 user={user}
-                onWineryRated={onWineryRated}
               />
             ) : (
               <>
@@ -320,28 +315,6 @@ export default function Sidebar({
                       ))}
                     </div>
                   )}
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Minimum Rating</label>
-                  <div className="flex items-center mt-1">
-                    {[0, 1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => onRatingFilterChange(star)}
-                        className={`text-2xl ${star <= ratingFilter ? 'text-yellow-400' : 'text-gray-300'}`}
-                      >
-                        &#9733;
-                      </button>
-                    ))}
-                    {ratingFilter > 0 && (
-                      <button
-                        onClick={() => onRatingFilterChange(0)}
-                        className="ml-2 px-2 py-1 text-xs text-gray-500 bg-gray-200 rounded-full hover:bg-gray-300"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
                 </div>
                 <div className="flex flex-col gap-4 mt-4">
                   {availableWineries.map((winery) => (
