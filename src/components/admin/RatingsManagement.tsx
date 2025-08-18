@@ -1,0 +1,142 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Rating } from '@/types';
+import { auth } from '@/utils/firebase';
+import { User } from 'firebase/auth';
+
+interface RatingsManagementProps {
+  user: User | null;
+}
+
+const RatingsManagement = ({ user }: RatingsManagementProps) => {
+  const [ratings, setRatings] = useState<Rating[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [editingRatingId, setEditingRatingId] = useState<string | null>(null);
+  const [editedComment, setEditedComment] = useState('');
+
+  useEffect(() => {
+    const fetchRatings = async () => {
+      if (!user) return;
+      try {
+        setLoading(true);
+        const token = await user.getIdToken();
+        const response = await fetch('/api/ratings', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch ratings');
+        }
+        const data = await response.json();
+        setRatings(data);
+        setError(null);
+      } catch (err) {
+        if (err instanceof Error) setError(err.message);
+        else setError('An unknown error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRatings();
+  }, [user]);
+
+  const handleDelete = async (id: string) => {
+    if (!user || !confirm('Are you sure you want to delete this rating?')) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/ratings/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete rating');
+      }
+
+      setRatings(ratings.filter(r => r.id !== id));
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+      else setError('An unknown error occurred');
+    }
+  };
+
+  if (loading) return <div>Loading ratings...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  const handleEdit = (rating: Rating) => {
+    setEditingRatingId(rating.id);
+    setEditedComment(rating.comment || '');
+  };
+
+  const handleUpdate = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch(`/api/ratings/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ comment: editedComment })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update rating');
+      }
+
+      setRatings(ratings.map(r => r.id === id ? { ...r, comment: editedComment } : r));
+      setEditingRatingId(null);
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+      else setError('An unknown error occurred');
+    }
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-semibold mb-4">Ratings & Comments</h2>
+      <div className="space-y-4">
+        {ratings.map(rating => (
+          <div key={rating.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+            <p><strong>Winery ID:</strong> {rating.wineryId}</p>
+            <p><strong>User ID:</strong> {rating.userId}</p>
+            <p><strong>Rating:</strong> {rating.rating}</p>
+            {editingRatingId === rating.id ? (
+              <textarea
+                value={editedComment}
+                onChange={(e) => setEditedComment(e.target.value)}
+                className="w-full mt-2 p-2 border rounded"
+              />
+            ) : (
+              <p><strong>Comment:</strong> {rating.comment}</p>
+            )}
+            <div className="mt-2 space-x-2">
+              {editingRatingId === rating.id ? (
+                <>
+                  <button onClick={() => handleUpdate(rating.id)} className="text-sm text-green-500 hover:underline">Save</button>
+                  <button onClick={() => setEditingRatingId(null)} className="text-sm text-gray-500 hover:underline">Cancel</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => handleEdit(rating)} className="text-sm text-blue-500 hover:underline">Edit</button>
+                  <button onClick={() => handleDelete(rating.id)} className="text-sm text-red-500 hover:underline">Delete</button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default RatingsManagement;

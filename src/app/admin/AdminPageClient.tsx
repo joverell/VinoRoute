@@ -2,17 +2,21 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Region, Winery, Wine } from '@/types';
-import { auth } from '@/utils/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { User } from 'firebase/auth';
 import WinerySearch from '@/components/WinerySearch';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';
+import RatingsManagement from '@/components/admin/RatingsManagement';
+import UserManagement from '@/components/admin/UserManagement';
 
-export default function AdminPage() {
+interface AdminPageClientProps {
+  user: User | null;
+}
+
+export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [regions, setRegions] = useState<Region[]>([]);
   const [locations, setLocations] = useState<Winery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
 
   // Form state for winery
   const [name, setName] = useState('');
@@ -31,8 +35,10 @@ export default function AdminPage() {
   // Editing/Modal state
   const [editingRegion, setEditingRegion] = useState<Region | null>(null);
   const [editingLocation, setEditingLocation] = useState<Winery | null>(null);
-  const [managingWinesForLocation, setManagingWinesForLocation] = useState<Winery | null>(null);
+  const [selectedLocationForWines, setSelectedLocationForWines] = useState<Winery | null>(null);
   const [newWineName, setNewWineName] = useState('');
+  const [expandedRegions, setExpandedRegions] = useState<{[key:string]: boolean}>({});
+  const [activeTab, setActiveTab] = useState('regions');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
@@ -47,24 +53,21 @@ export default function AdminPage() {
   }, [isLoaded]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (managingWinesForLocation) {
-        const updatedLocation = locations.find(l => l.id === managingWinesForLocation.id);
+    if (selectedLocationForWines) {
+        const updatedLocation = locations.find(l => l.id === selectedLocationForWines.id);
         if (updatedLocation) {
-            setManagingWinesForLocation(updatedLocation);
+            setSelectedLocationForWines(updatedLocation);
         }
     }
-  }, [locations, managingWinesForLocation]);
+  }, [locations, selectedLocationForWines]);
 
   const getRegionDocId = (name: string) => {
     return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-');
   }
+
+  const toggleRegion = (regionName: string) => {
+    setExpandedRegions(prev => ({ ...prev, [regionName]: !prev[regionName] }));
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -301,19 +304,19 @@ export default function AdminPage() {
 
   const handleAddWineSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!user || !managingWinesForLocation) return;
+      if (!user || !selectedLocationForWines) return;
 
       const newWineData = {
           name: newWineName,
           type: 'TBD',
           producer: 'TBD',
-          region: managingWinesForLocation.region,
+          region: selectedLocationForWines.region,
           country: 'Australia',
       };
 
       try {
           const token = await user.getIdToken();
-          const response = await fetch(`/api/locations/${managingWinesForLocation.id}/wines`, {
+          const response = await fetch(`/api/locations/${selectedLocationForWines.id}/wines`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
               body: JSON.stringify(newWineData),
@@ -330,11 +333,11 @@ export default function AdminPage() {
   };
 
   const handleDeleteWine = async (wine: Wine) => {
-      if (!user || !managingWinesForLocation || !confirm(`Delete "${wine.name}"?`)) return;
+      if (!user || !selectedLocationForWines || !confirm(`Delete "${wine.name}"?`)) return;
 
       try {
           const token = await user.getIdToken();
-          await fetch(`/api/locations/${managingWinesForLocation.id}/wines/${wine.lwin}`, {
+          await fetch(`/api/locations/${selectedLocationForWines.id}/wines/${wine.lwin}`, {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${token}` },
           });
@@ -351,89 +354,140 @@ export default function AdminPage() {
   return (
     <div className="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
-        </header>
-
         {!user ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <p className="text-center text-gray-600 dark:text-gray-400">Please log in.</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1 space-y-8">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
-                    <h2 className="text-2xl font-semibold mb-4">Search for Winery</h2>
-                    <WinerySearch regions={regions} onAddWinery={handleWinerySearchAdd} user={user} />
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
-                  <h2 className="text-2xl font-semibold mb-4">Add Winery</h2>
-                  <form onSubmit={handleAddWinery} className="space-y-4">
-                    <input type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                    <input type="text" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                    <select value={region} onChange={e => setRegion(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
-                      {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
-                    </select>
-                    <select value={type} onChange={e => setType(e.target.value as 'winery' | 'distillery')} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
-                      <option value="winery">Winery</option>
-                      <option value="distillery">Distillery</option>
-                    </select>
-                    <input type="text" placeholder="Tags (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                    <input type="number" placeholder="Visit Duration (mins)" value={visitDuration} onChange={e => setVisitDuration(parseInt(e.target.value))} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                    <button type="submit" disabled={isSubmitting || !isLoaded} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
-                      {isSubmitting ? 'Adding...' : 'Add Winery'}
-                    </button>
-                  </form>
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
-                  <h2 className="text-2xl font-semibold mb-4">Add Region</h2>
-                  <form onSubmit={handleAddRegion} className="space-y-4">
-                    <input type="text" placeholder="Region Name" value={regionName} onChange={e => setRegionName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                    <input type="text" placeholder="State" value={regionState} onChange={e => setRegionState(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                    <div className="flex space-x-2">
-                      <input type="number" step="any" placeholder="Center Latitude" value={regionCenterLat} onChange={e => setRegionCenterLat(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                      <input type="number" step="any" placeholder="Center Longitude" value={regionCenterLng} onChange={e => setRegionCenterLng(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                    </div>
-                    <button type="submit" disabled={isSubmitting} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
-                      {isSubmitting ? 'Adding...' : 'Add Region'}
-                    </button>
-                  </form>
-                </div>
-              </div>
+            <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
+              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                <button onClick={() => setActiveTab('regions')} className={`${activeTab === 'regions' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                  Regions & Locations
+                </button>
+                <button onClick={() => setActiveTab('ratings')} className={`${activeTab === 'ratings' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                  Ratings & Comments
+                </button>
+                <button onClick={() => setActiveTab('users')} className={`${activeTab === 'users' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                  User Management
+                </button>
+              </nav>
+            </div>
 
-              <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-semibold mb-4">Regions & Locations</h2>
-                <div className="space-y-6">
-                  {regions.map(r => (
-                    <div key={getRegionDocId(r.name)} className="border-t pt-4">
-                      <div className="flex justify-between items-center">
+            {activeTab === 'regions' && (
+              <div className={`grid grid-cols-1 ${selectedLocationForWines ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8`}>
+                <div className="lg:col-span-1 space-y-8">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
+                      <h2 className="text-2xl font-semibold mb-4">Search for Winery</h2>
+                      <WinerySearch regions={regions} onAddWinery={handleWinerySearchAdd} user={user} />
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
+                    <h2 className="text-2xl font-semibold mb-4">Add Winery</h2>
+                    <form onSubmit={handleAddWinery} className="space-y-4">
+                      <input type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <input type="text" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <select value={region} onChange={e => setRegion(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
+                        {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
+                      </select>
+                      <select value={type} onChange={e => setType(e.target.value as 'winery' | 'distillery')} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
+                        <option value="winery">Winery</option>
+                        <option value="distillery">Distillery</option>
+                      </select>
+                      <input type="text" placeholder="Tags (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <input type="number" placeholder="Visit Duration (mins)" value={visitDuration} onChange={e => setVisitDuration(parseInt(e.target.value))} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <button type="submit" disabled={isSubmitting || !isLoaded} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
+                        {isSubmitting ? 'Adding...' : 'Add Winery'}
+                      </button>
+                    </form>
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
+                    <h2 className="text-2xl font-semibold mb-4">Add Region</h2>
+                    <form onSubmit={handleAddRegion} className="space-y-4">
+                      <input type="text" placeholder="Region Name" value={regionName} onChange={e => setRegionName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <input type="text" placeholder="State" value={regionState} onChange={e => setRegionState(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <div className="flex space-x-2">
+                        <input type="number" step="any" placeholder="Center Latitude" value={regionCenterLat} onChange={e => setRegionCenterLat(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                        <input type="number" step="any" placeholder="Center Longitude" value={regionCenterLng} onChange={e => setRegionCenterLng(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      </div>
+                      <button type="submit" disabled={isSubmitting} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
+                        {isSubmitting ? 'Adding...' : 'Add Region'}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                  <h2 className="text-2xl font-semibold mb-4">Regions & Locations</h2>
+                  <div className="space-y-6">
+                    {regions.map(r => (
+                      <div key={getRegionDocId(r.name)} className="border-t pt-4">
+                        <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleRegion(r.name)}>
                           <h3 className="text-xl font-semibold text-coral-500">{r.name}</h3>
                           <div className="space-x-2 flex items-center">
-                              <button onClick={() => setEditingRegion({...r})} className="text-sm text-blue-500 hover:underline">Edit</button>
-                              <button onClick={() => handleDeleteRegion(r)} className="text-sm text-red-500 hover:underline">Delete</button>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingRegion({ ...r }) }} className="text-sm text-blue-500 hover:underline">Edit</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r) }} className="text-sm text-red-500 hover:underline">Delete</button>
+                            <span>{expandedRegions[r.name] ? '▲' : '▼'}</span>
                           </div>
-                      </div>
-                      <ul className="mt-2 space-y-2">
-                        {locations.filter(loc => loc.region === r.name).map(loc => (
-                          <li key={loc.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
-                            <span>{loc.name}</span>
-                            <div className="space-x-4 flex items-center">
-                                <button onClick={() => setManagingWinesForLocation({...loc})} className="text-sm text-green-500 hover:underline">Manage Wines</button>
-                                <button onClick={() => setEditingLocation({...loc})} className="text-sm text-blue-500 hover:underline">Edit</button>
-                                <button onClick={() => handleDeleteLocation(loc)} className="text-sm text-red-500 hover:underline">Delete</button>
-                            </div>
-                          </li>
-                        ))}
-                        {locations.filter(loc => loc.region === r.name).length === 0 && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">No locations.</p>
+                        </div>
+                        {expandedRegions[r.name] && (
+                          <ul className="mt-2 space-y-2">
+                            {locations.filter(loc => loc.region === r.name).map(loc => (
+                              <li key={loc.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
+                                <span>{loc.name}</span>
+                                <div className="space-x-4 flex items-center">
+                                  <button onClick={() => setSelectedLocationForWines({ ...loc })} className="text-sm text-green-500 hover:underline">Manage Wines</button>
+                                  <button onClick={() => setEditingLocation({ ...loc })} className="text-sm text-blue-500 hover:underline">Edit</button>
+                                  <button onClick={() => handleDeleteLocation(loc)} className="text-sm text-red-500 hover:underline">Delete</button>
+                                </div>
+                              </li>
+                            ))}
+                            {locations.filter(loc => loc.region === r.name).length === 0 && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400">No locations.</p>
+                            )}
+                          </ul>
                         )}
-                      </ul>
-                    </div>
-                  ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
+                {selectedLocationForWines && (
+                  <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                    <h2 className="text-2xl font-semibold mb-4">Manage Wines for {selectedLocationForWines.name}</h2>
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-2">Add New Wine</h3>
+                      <form onSubmit={handleAddWineSubmit} className="flex items-center space-x-2">
+                        <input type="text" placeholder="New Wine Name" value={newWineName} onChange={e => setNewWineName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
+                        <button type="submit" className="px-4 py-2 bg-green-500 text-white font-bold rounded-md hover:bg-green-600">Add</button>
+                      </form>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">Existing Wines</h3>
+                    <ul className="space-y-2 max-h-96 overflow-y-auto">
+                      {(selectedLocationForWines.wines && selectedLocationForWines.wines.length > 0) ? (
+                        selectedLocationForWines.wines.map(wine => (
+                          <li key={wine.lwin} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
+                            <span>{wine.name}</span>
+                            <button onClick={() => handleDeleteWine(wine)} className="text-sm text-red-500 hover:underline">Delete</button>
+                          </li>
+                        ))
+                      ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">No wines found for this location.</p>
+                      )}
+                    </ul>
+                    <div className="flex justify-end pt-6">
+                      <button type="button" onClick={() => setSelectedLocationForWines(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {activeTab === 'ratings' && (
+              <RatingsManagement user={user} />
+            )}
+
+            {activeTab === 'users' && (
+              <UserManagement user={user} />
+            )}
 
             {editingRegion && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -481,37 +535,6 @@ export default function AdminPage() {
                     </div>
                   </form>
                 </div>
-              </div>
-            )}
-
-            {managingWinesForLocation && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-2xl">
-                      <h2 className="text-2xl font-semibold mb-4">Manage Wines for {managingWinesForLocation.name}</h2>
-                      <div className="mb-6">
-                          <h3 className="text-lg font-semibold mb-2">Add New Wine</h3>
-                          <form onSubmit={handleAddWineSubmit} className="flex items-center space-x-2">
-                              <input type="text" placeholder="New Wine Name" value={newWineName} onChange={e => setNewWineName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
-                              <button type="submit" className="px-4 py-2 bg-green-500 text-white font-bold rounded-md hover:bg-green-600">Add</button>
-                          </form>
-                      </div>
-                      <h3 className="text-lg font-semibold mb-2">Existing Wines</h3>
-                      <ul className="space-y-2 max-h-64 overflow-y-auto">
-                          {(managingWinesForLocation.wines && managingWinesForLocation.wines.length > 0) ? (
-                              managingWinesForLocation.wines.map(wine => (
-                                  <li key={wine.lwin} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
-                                      <span>{wine.name}</span>
-                                      <button onClick={() => handleDeleteWine(wine)} className="text-sm text-red-500 hover:underline">Delete</button>
-                                  </li>
-                              ))
-                          ) : (
-                              <p className="text-sm text-gray-500 dark:text-gray-400">No wines found for this location.</p>
-                          )}
-                      </ul>
-                      <div className="flex justify-end pt-6">
-                          <button type="button" onClick={() => setManagingWinesForLocation(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
-                      </div>
-                  </div>
               </div>
             )}
           </>

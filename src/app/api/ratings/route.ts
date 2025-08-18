@@ -18,6 +18,33 @@ async function getAuthenticatedUser(request: Request, adminAuth: Auth | null): P
     }
 }
 
+export async function GET(request: Request) {
+    const { adminDb, adminAuth } = initializeFirebaseAdmin();
+    try {
+        const user = await getAuthenticatedUser(request, adminAuth);
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Optional: Add admin check if needed
+        // if (!user.admin) {
+        //     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        // }
+
+        if (!adminDb) {
+            return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
+        }
+
+        const ratingsSnapshot = await adminDb.collection('ratings').orderBy('createdAt', 'desc').get();
+        const ratings = ratingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        return NextResponse.json(ratings);
+    } catch (error) {
+        console.error('Error fetching ratings:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
 export async function POST(request: Request) {
   const { adminDb, adminAuth } = initializeFirebaseAdmin();
   try {
