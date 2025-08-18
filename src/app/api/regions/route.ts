@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/utils/firebase-admin';
+import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { Region } from '@/types';
+
+const { adminDb, adminAuth } = initializeFirebaseAdmin();
 
 export async function POST(request: Request) {
   try {
+    if (!adminDb || !adminAuth) {
+      return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
+    }
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -47,6 +52,9 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
+    }
     const regionsCollection = adminDb.collection('regions');
     const snapshot = await regionsCollection.get();
     const regions = snapshot.docs.map(doc => doc.data() as Region);
