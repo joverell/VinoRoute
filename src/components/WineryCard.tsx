@@ -5,12 +5,12 @@ interface WineryCardProps {
   onAddToTrip: (winery: Winery) => void;
   onRemoveFromTrip: (wineryId: number | string) => void;
   isInTrip: boolean;
-
-  onSelect: (winery: Winery) => void;
+  isSelected: boolean;
+  onSelect: (winery: Winery | null) => void;
   onTagClick: (tag: string) => void;
 }
 
-export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isInTrip, onSelect, onTagClick }: WineryCardProps) {
+export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isInTrip, isSelected, onSelect, onTagClick }: WineryCardProps) {
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Prevent card click when clicking on a button (including tag buttons)
     if ((e.target as HTMLElement).closest('a, button')) {
