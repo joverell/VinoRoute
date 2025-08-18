@@ -49,6 +49,7 @@ export default function HomePage() {
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBoundsLiteral | null>(null); // <-- NEW STATE FOR BOUNDS
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [ratingFilter, setRatingFilter] = useState(0);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const searchParams = useSearchParams();
@@ -92,22 +93,24 @@ export default function HomePage() {
     setStartTime(tour.startTime);
   }, []);
 
+  const fetchLocations = useCallback(async () => {
+    const querySnapshot = await getDocs(collection(db, "locations"));
+    const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
+    const locationsData = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      const regionParts = data.region.split(', ');
+      const stateAbbr = regionParts[regionParts.length - 1];
+      const state = stateMap[stateAbbr] || "Other";
+      return { ...data, id: doc.id, state: state } as Winery;
+    });
+    setAllLocations(locationsData);
+    return locationsData;
+  }, []);
+
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "locations"));
-
-        const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
-
-        const locationsData = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          const regionParts = data.region.split(', ');
-          const stateAbbr = regionParts[regionParts.length - 1];
-          const state = stateMap[stateAbbr] || "Other";
-          return { ...data, id: doc.id, state: state } as Winery;
-        });
-
-        setAllLocations(locationsData);
+        const locationsData = await fetchLocations();
 
         const regionsResponse = await fetch('/api/regions');
         const rawRegionsData = await regionsResponse.json();
@@ -405,7 +408,9 @@ export default function HomePage() {
       ? searchTags.every(tag => w.tags.includes(tag))
       : true;
 
-    return regionMatch && typeMatch && searchMatch && tagMatch;
+    const ratingMatch = ratingFilter === 0 || (w.averageRating && w.averageRating >= ratingFilter);
+
+    return regionMatch && typeMatch && searchMatch && tagMatch && ratingMatch;
   });
 
   if (!selectedRegion || !isLoaded) {
@@ -441,6 +446,7 @@ export default function HomePage() {
           onDurationChange={handleDurationChange}
           selectedWinery={selectedWinery}
           onSelectWinery={setSelectedWinery}
+          onWineryRated={fetchLocations}
           onAddCustomStop={handleAddCustomStop}
           selectedRegion={selectedRegion}
           onRegionSelection={handleRegionSelection}
@@ -457,6 +463,8 @@ export default function HomePage() {
           onSearchTermChange={setSearchTerm}
           searchTags={searchTags}
           onTagFilterChange={handleTagFilterChange}
+          ratingFilter={ratingFilter}
+          onRatingFilterChange={setRatingFilter}
         />
         <div className="flex-grow h-full">
           <MapComponent
