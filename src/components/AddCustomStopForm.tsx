@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Autocomplete } from '@react-google-maps/api';
 import { PrepopulatedStop } from './HomePage';
+import { useGoogleMaps } from '../app/GoogleMapsProvider';
 
 interface AddCustomStopFormProps {
   onAdd: (name: string, address: string, duration: number) => void;
@@ -17,6 +18,7 @@ export default function AddCustomStopForm({ onAdd, onCancel, defaultDuration, pr
   const [duration, setDuration] = useState(defaultDuration);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { isLoaded } = useGoogleMaps();
 
   useEffect(() => {
     if (prepopulatedData) {
@@ -47,19 +49,29 @@ export default function AddCustomStopForm({ onAdd, onCancel, defaultDuration, pr
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
           required
         />
-        <Autocomplete
-          onLoad={(ref) => (autocompleteRef.current = ref)}
-          options={{ types: ['establishment', 'geocode'], componentRestrictions: { country: 'AU' } }}
-        >
+        {isLoaded ? (
+          <Autocomplete
+            onLoad={(ref) => (autocompleteRef.current = ref)}
+            options={{ types: ['establishment', 'geocode'], componentRestrictions: { country: 'AU' } }}
+          >
+            <input
+              type="text"
+              placeholder="Address"
+              ref={inputRef}
+              defaultValue={address}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+              required
+            />
+          </Autocomplete>
+        ) : (
           <input
             type="text"
             placeholder="Address"
-            ref={inputRef}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
             defaultValue={address}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-            required
+            disabled
           />
-        </Autocomplete>
+        )}
         <div>
           <label className="text-xs text-gray-500">Duration (mins)</label>
           <input

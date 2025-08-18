@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Region, Winery, Wine } from '@/types';
 import { auth } from '@/utils/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { useJsApiLoader } from '@react-google-maps/api';
 import WinerySearch from '@/components/WinerySearch';
-
-const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['places'];
+import { useGoogleMaps } from '@/app/GoogleMapsProvider';
 
 export default function AdminPage() {
   const [regions, setRegions] = useState<Region[]>([]);
@@ -62,13 +60,13 @@ export default function AdminPage() {
             setManagingWinesForLocation(updatedLocation);
         }
     }
-  }, [locations]);
+  }, [locations, managingWinesForLocation]);
 
   const getRegionDocId = (name: string) => {
     return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-');
   }
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const regionsResponse = await fetch('/api/regions');
@@ -92,27 +90,16 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [region]);
 
   useEffect(() => {
     if (user) fetchData();
-  }, [user]);
-
-  const handleAddWinery = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isLoaded || !geocoderRef.current) {
-        alert('Google Maps API not loaded yet.');
-        return;
-    }
-    if (!user) {
-        alert('You must be logged in.');
-        return;
+  }, [user, fetchData]);
 
   const addWineryToDatabase = async (wineryData: Omit<Winery, 'id'>) => {
     if (!user) {
       alert('You must be logged in to add a winery.');
       return;
-
     }
     setIsSubmitting(true);
     try {
@@ -137,7 +124,7 @@ export default function AdminPage() {
       setVisitDuration(60);
       setCoords(null);
       // Refresh locations
-      await fetchLocations();
+      await fetchData();
     } catch (err) {
       if (err instanceof Error) {
         alert(`Error adding winery: ${err.message}`);
@@ -148,42 +135,6 @@ export default function AdminPage() {
       setIsSubmitting(false);
     }
   };
-
-
-    geocoderRef.current.geocode({ address: address }, async (results, status) => {
-      if (status === 'OK' && results) {
-        const coords = {
-          lat: results[0].geometry.location.lat(),
-          lng: results[0].geometry.location.lng(),
-        };
-        const newWineryData: Omit<Winery, 'id'> = {
-            name, address, coords, region, type,
-            tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-            visitDuration,
-            openingHours: { "0":{ open: 10, close: 17 },"1":{ open: 10, close: 17 },"2":{ open: 10, close: 17 },"3":{ open: 10, close: 17 },"4":{ open: 10, close: 17 },"5":{ open: 10, close: 17 },"6":{ open: 10, close: 17 } }
-        };
-
-        try {
-            const token = await user.getIdToken();
-            const response = await fetch('/api/locations', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(newWineryData)
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Failed to add winery');
-            alert(`Winery "${name}" added successfully!`);
-            setName(''); setAddress(''); setTags(''); setVisitDuration(60);
-            fetchData();
-        } catch (err) {
-            if (err instanceof Error) alert(`Error: ${err.message}`);
-            else alert('An unknown error occurred.');
-        } finally {
-            setIsSubmitting(false);
-        }
-      } else {
-        alert('Geocode failed: ' + status);
-        setIsSubmitting(false);
 
   const handleAddWinery = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,7 +160,6 @@ export default function AdminPage() {
       if (!isLoaded || !geocoderRef.current) {
         alert('Google Maps API not loaded yet. Please try again in a moment.');
         return;
-
       }
       geocoderRef.current.geocode({ address: address }, async (results, status) => {
         if (status === 'OK' && results) {
@@ -230,19 +180,6 @@ export default function AdminPage() {
     if (!user || !editingLocation) return;
     setIsSubmitting(true);
 
-  const handleWinerySearchAdd = (winery: Partial<Winery>) => {
-    if (winery.name) setName(winery.name);
-    if (winery.address) setAddress(winery.address);
-    if (winery.region) setRegion(winery.region);
-    if (winery.coords) setCoords(winery.coords);
-    // You might want to scroll to the form or highlight it
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
     try {
         const token = await user.getIdToken();
         const response = await fetch(`/api/locations/${editingLocation.id}`, {
@@ -261,6 +198,15 @@ export default function AdminPage() {
     } finally {
         setIsSubmitting(false);
     }
+  };
+
+  const handleWinerySearchAdd = (winery: Partial<Winery>) => {
+    if (winery.name) setName(winery.name);
+    if (winery.address) setAddress(winery.address);
+    if (winery.region) setRegion(winery.region);
+    if (winery.coords) setCoords(winery.coords);
+    // You might want to scroll to the form or highlight it
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteLocation = async (location: Winery) => {
@@ -403,23 +349,6 @@ export default function AdminPage() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>Admin Panel</h1>
-
-      {!user && <p>Please log in to use the admin tools.</p>}
-
-      {user && (
-        <>
-            <div style={{ border: '1px solid #ccc', padding: '15px', marginBottom: '20px' }}>
-                <WinerySearch regions={regions} onAddWinery={handleWinerySearchAdd} user={user} />
-            </div>
-            <h2>Add New Winery</h2>
-            <form onSubmit={handleAddWinery} style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '400px' }}>
-                <input type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required />
-                <input type="text" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} required />
-                <select value={region} onChange={e => setRegion(e.target.value)} required>
-                    {regions.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
-
     <div className="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
@@ -434,6 +363,10 @@ export default function AdminPage() {
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-1 space-y-8">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
+                    <h2 className="text-2xl font-semibold mb-4">Search for Winery</h2>
+                    <WinerySearch regions={regions} onAddWinery={handleWinerySearchAdd} user={user} />
+                </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
                   <h2 className="text-2xl font-semibold mb-4">Add Winery</h2>
                   <form onSubmit={handleAddWinery} className="space-y-4">
@@ -469,7 +402,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-
               <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                 <h2 className="text-2xl font-semibold mb-4">Regions & Locations</h2>
                 <div className="space-y-6">
@@ -501,71 +433,6 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
-
-        {user && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Column 1: Add Winery Form */}
-            <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
-              <h2 className="text-2xl font-semibold mb-4">Add New Winery</h2>
-              <form onSubmit={handleAddWinery} className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Address"
-                  value={address}
-                  onChange={e => setAddress(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
-                />
-                <select
-                  value={region}
-                  onChange={e => setRegion(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
-                >
-                  {regions.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
-
-                </select>
-                <select
-                  value={type}
-                  onChange={e => setType(e.target.value as 'winery' | 'distillery')}
-                  required
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
-                >
-                  <option value="winery">Winery</option>
-                  <option value="distillery">Distillery</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Tags (comma-separated)"
-                  value={tags}
-                  onChange={e => setTags(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
-                />
-                <input
-                  type="number"
-                  placeholder="Visit Duration (mins)"
-                  value={visitDuration}
-                  onChange={e => setVisitDuration(parseInt(e.target.value))}
-                  required
-                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
-                />
-                <button
-                  type="submit"
-                  disabled={isSubmitting || !isLoaded}
-                  className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300"
-                >
-                  {isSubmitting ? 'Adding...' : (isLoaded ? 'Add Winery' : 'Loading Maps...')}
-                </button>
-              </form>
-
             </div>
 
             {editingRegion && (

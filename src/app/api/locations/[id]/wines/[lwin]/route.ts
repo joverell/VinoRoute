@@ -16,7 +16,7 @@ async function auth(request: Request) {
     try {
         await adminAuth.verifyIdToken(token);
         return null;
-    } catch (error) {
+    } catch {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
 }
