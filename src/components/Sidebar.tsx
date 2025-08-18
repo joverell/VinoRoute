@@ -32,6 +32,7 @@ const getNextSaturday10AM = () => {
 };
 
 const DragHandleIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400"><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="15" cy="6" r="1.5" fill="currentColor"/><circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="18" r="1.5" fill="currentColor"/><circle cx="15" cy="18" r="1.5" fill="currentColor"/></svg> );
+const InfoIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg> );
 const formatTime = (date: Date) => date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' });
 const formatSavedDate = (timestamp: { seconds: number }) => new Date(timestamp.seconds * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -83,6 +84,7 @@ export default function Sidebar({
   searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
+  const [showInfoTooltip, setShowInfoTooltip] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
   const dragItem = useRef<number | null>(null);
   const dragOverItem = useRef<number | null>(null);
@@ -207,7 +209,21 @@ export default function Sidebar({
           {tripStops.length > 0 && (
             <div className="mb-4 printable">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-700">My Tour ({tripStops.length})</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-700">My Tour ({tripStops.length})</h3>
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setShowInfoTooltip(true)}
+                    onMouseLeave={() => setShowInfoTooltip(false)}
+                  >
+                    <InfoIcon />
+                    {showInfoTooltip && (
+                      <div className="absolute bottom-full mb-2 w-64 p-2 text-xs text-white bg-gray-800 rounded-md shadow-lg z-10">
+                        All route calculations will be based from the starting point, or location 1, listed below.
+                      </div>
+                    )}
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   {itinerary && (
                     <button onClick={() => window.print()} className="px-2 py-1 text-xs font-bold text-white bg-gray-500 rounded-lg hover:bg-gray-600">Print</button>
