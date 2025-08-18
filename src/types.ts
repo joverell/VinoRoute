@@ -11,11 +11,13 @@ export interface Winery {
   openingHours: { [key: number]: { open: number; close: number } | null };
   visitDuration: number;
   address?: string;
+  state?: string;
 }
 
 export interface Region {
   name:string;
   center: { lat: number; lng: number };
+  state: string;
 }
 
 export interface RegionBoundary {

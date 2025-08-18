@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import MapComponent from '@/components/Map';
 import Sidebar from '@/components/Sidebar';
-import { Winery, Region } from '@/types';
+import { Winery, Region, SavedTour } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
 import { db, auth } from '@/utils/firebase';
@@ -18,19 +18,6 @@ export interface TripStop {
 }
 export interface PrepopulatedStop { name: string; address: string; }
 export interface ClickedPoi { name: string; coords: google.maps.LatLngLiteral; }
-export interface SavedTour {
-  id: string;
-  userId: string;
-  tourName: string;
-  regionName: string;
-  startTime: string;
-  stops: { 
-    wineryId: string | number; 
-    duration: number;
-    customData?: Winery; 
-  }[];
-  createdAt: { seconds: number; nanoseconds: number; };
-}
 
 const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['maps', 'routes', 'marker', 'places'];
 
@@ -98,18 +85,28 @@ export default function HomePage() {
     const initializeApp = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "locations"));
-        const locationsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Winery[];
+
+        const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
+
+        const locationsData = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          const regionParts = data.region.split(', ');
+          const stateAbbr = regionParts[regionParts.length - 1];
+          const state = stateMap[stateAbbr] || "Other";
+          return { ...data, id: doc.id, state: state } as Winery;
+        });
+
         setAllLocations(locationsData);
 
         const regionMap = new Map<string, Region>();
         locationsData.forEach(loc => {
           if (!regionMap.has(loc.region)) {
-            const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
-            const regionParts = loc.region.split(', ');
-            const stateAbbr = regionParts[regionParts.length - 1];
-            const state = stateMap[stateAbbr] || "Other";
-            
-            regionMap.set(loc.region, { name: loc.region, center: loc.coords, state: state });
+            const newRegion: Region = {
+              name: loc.region,
+              center: loc.coords,
+              state: loc.state!,
+            };
+            regionMap.set(loc.region, newRegion);
           }
         });
         const dynamicRegions = Array.from(regionMap.values()).sort((a, b) => a.state.localeCompare(b.state) || a.name.localeCompare(b.name));

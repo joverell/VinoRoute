@@ -8,8 +8,6 @@ import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';
 import { regionBoundaries } from '@/data/regionBoundaries';
 
-const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['maps', 'routes', 'marker', 'places'];
-
 interface MapProps {
   isLoaded: boolean;
   itinerary: ItineraryStop[] | null;
@@ -35,10 +33,6 @@ const createNumberedIcon = (number: number, isLoaded: boolean) => {
 };
 
 export default function MapComponent(props: MapProps) {
-  if (!props || !props.selectedRegion) {
-    return null;
-  }
-
   const { isLoaded, itinerary, directions, onSelectWinery, availableWineries, selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay, mapBounds } = props;
 
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -92,8 +86,6 @@ export default function MapComponent(props: MapProps) {
   const itineraryWineryIds = new Set(itinerary?.map(stop => stop.winery.id) || []);
   const otherAvailableWineries = availableWineries.filter(winery => !itineraryWineryIds.has(winery.id));
 
-  if (!isLoaded) return <div>Loading Map...</div>;
-
   return (
     <GoogleMap
       mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -102,11 +94,13 @@ export default function MapComponent(props: MapProps) {
       options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
       onLoad={(map) => { mapRef.current = map; }}
       onClick={(e) => {
-        if (e.placeId) {
-          e.stop();
-          const latLng = e.latLng!.toJSON();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const event = e as any;
+        if (event.placeId) {
+          event.stop();
+          const latLng = event.latLng!.toJSON();
           const service = new window.google.maps.places.PlacesService(mapRef.current!);
-          service.getDetails({ placeId: e.placeId, fields: ['name'] }, (place, status) => {
+          service.getDetails({ placeId: event.placeId, fields: ['name'] }, (place, status) => {
             if (status === 'OK' && place && place.name) {
               onMapClick({ name: place.name, coords: latLng });
             }
