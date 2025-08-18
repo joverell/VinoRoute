@@ -341,6 +341,7 @@ export default function Sidebar({
                       onAddToTrip={onAddToTrip}
                       onRemoveFromTrip={onRemoveFromTrip}
                       isInTrip={tripStops.some(stop => stop.winery.id === winery.id)}
+                      isSelected={selectedWinery?.id === winery.id}
                       onSelect={onSelectWinery}
                       onTagClick={onTagFilterChange}
                     />
