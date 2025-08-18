@@ -1,11 +1,15 @@
 import { NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/utils/firebase-admin';
+import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id:string }> }
 ) {
   try {
+    const { adminDb, adminAuth } = initializeFirebaseAdmin();
+    if (!adminDb || !adminAuth) {
+      return NextResponse.json({ error: 'Firebase not initialized' }, { status: 500 });
+    }
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

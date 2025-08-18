@@ -141,8 +141,6 @@ export default function Sidebar({
 
   return (
     <div className="w-full sm:w-96 h-full p-4 overflow-y-auto bg-white shadow-lg flex-shrink-0 print:hidden">
-      <Auth user={user} />
-
       <div className="flex my-4 border-b">
         <button onClick={() => setView('planner')} className={`flex-1 pb-2 font-semibold ${view === 'planner' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-gray-500'}`}>Planner</button>
         {user && (
@@ -192,19 +190,6 @@ export default function Sidebar({
             {tripStops.length > 1 && (
               <button onClick={onOptimizeRoute} className="w-full px-4 py-2 font-bold text-white bg-teal-500 rounded-lg hover:bg-teal-600">Find Most Efficient Route</button>
             )}
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Map Options</h3>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Show Region Boundaries</span>
-                <label className="flex items-center cursor-pointer">
-                  <div className="relative">
-                    <input type="checkbox" checked={showRegionOverlay} onChange={onToggleRegionOverlay} className="sr-only" />
-                    <div className={`block w-10 h-6 rounded-full transition-colors ${showRegionOverlay ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
-                    <div className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${showRegionOverlay ? 'translate-x-4' : ''}`}></div>
-                  </div>
-                </label>
-              </div>
-            </div>
           </div>
 
           {tripStops.length > 0 && (
@@ -299,14 +284,6 @@ export default function Sidebar({
                     <button onClick={() => setShowCustomForm(!showCustomForm)} className="px-2 py-1 text-xs font-bold text-teal-700 bg-teal-100 rounded-lg hover:bg-teal-200">
                       {showCustomForm ? 'Cancel' : '+ Custom Stop'}
                     </button>
-                    <label className="flex items-center cursor-pointer">
-                      <span className="mr-2 text-sm text-gray-700">Distilleries</span>
-                      <div className="relative">
-                        <input type="checkbox" checked={includeDistilleries} onChange={onToggleDistilleries} className="sr-only" />
-                        <div className={`block w-10 h-6 rounded-full transition-colors ${includeDistilleries ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
-                        <div className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${includeDistilleries ? 'translate-x-4' : ''}`}></div>
-                      </div>
-                    </label>
                   </div>
                 </div>
                 {showCustomForm && <AddCustomStopForm onAdd={handleAddCustomAndClose} onCancel={handleCancelCustomForm} defaultDuration={defaultDuration} prepopulatedData={prepopulatedStop} />}
@@ -341,7 +318,7 @@ export default function Sidebar({
                       onAddToTrip={onAddToTrip}
                       onRemoveFromTrip={onRemoveFromTrip}
                       isInTrip={tripStops.some(stop => stop.winery.id === winery.id)}
-                      isSelected={selectedWinery?.id === winery.id}
+                      isSelected={false}
 
                       onSelect={onSelectWinery}
                       onTagClick={onTagFilterChange}
