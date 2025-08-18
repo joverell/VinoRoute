@@ -18,7 +18,7 @@ const Banner = ({
   onToggleDistilleries,
 }: BannerProps) => {
   return (
-    <div className="bg-gray-800 text-white p-4 flex items-center justify-between print:hidden">
+    <div className="bg-gray-800 text-white p-4 flex flex-wrap items-center justify-between print:hidden">
       <div className="flex items-center">
         <div className="w-12 h-12 bg-gray-700 rounded-full mr-4 flex-shrink-0"></div>
         <div>
