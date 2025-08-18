@@ -40,19 +40,6 @@ export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isIn
             {winery.state && <p className="flex items-center"><span className="w-20 font-bold shrink-0">State</span><span className="text-gray-800">{winery.state}</span></p>}
             <p className="flex items-center"><span className="w-20 font-bold shrink-0">Region</span><span className="text-gray-800">{winery.region}</span></p>
             <p className="flex items-center"><span className="w-20 font-bold shrink-0">Type</span><span className="capitalize text-gray-800">{winery.type}</span></p>
-            {winery.url && (
-              <p className="flex items-start">
-                <span className="w-20 font-bold shrink-0">Website</span>
-                <a
-                  href={winery.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-teal-500 hover:underline break-all"
-                >
-                  {winery.url}
-                </a>
-              </p>
-            )}
           </div>
         </div>
       )}

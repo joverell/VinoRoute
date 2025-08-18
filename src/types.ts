@@ -12,7 +12,6 @@ export interface Winery {
   visitDuration: number;
   address?: string;
   state?: string;
-  url?: string;
 }
 
 export interface Region {
