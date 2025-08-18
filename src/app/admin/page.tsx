@@ -102,6 +102,9 @@ export default function AdminPage() {
     <div style={{ padding: '20px' }}>
       <h1>Admin Panel</h1>
       <p>
+        <a href="/admin/wines" style={{ textDecoration: 'underline' }}>Manage Wines</a>
+      </p>
+      <p>
         This panel allows you to find new wineries in a region. Due to the difficulty of automatically finding accurate coordinates,
         this tool only identifies potential new wineries. It does not add them to the database.
       </p>
