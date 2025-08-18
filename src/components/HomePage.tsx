@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import MapComponent from '@/components/Map';
 import Sidebar from '@/components/Sidebar';
+import WineryDetailPanel from '@/components/WineryDetailPanel';
 import { Winery, Region, SavedTour } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
@@ -464,6 +465,16 @@ export default function HomePage() {
             mapBounds={mapBounds}
           />
         </div>
+        {selectedWinery && (
+          <WineryDetailPanel
+            winery={selectedWinery}
+            onClearSelection={() => setSelectedWinery(null)}
+            onAddToTrip={handleAddToTrip}
+            onRemoveFromTrip={handleRemoveFromTrip}
+            isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
+            user={user}
+          />
+        )}
       </main>
       <PrintableItinerary itinerary={itinerary} startTime={startTime} />
     </>

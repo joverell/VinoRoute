@@ -56,7 +56,7 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
     <div className="p-4 bg-white rounded-lg shadow-md">
       <button
         onClick={onClearSelection}
-        className="text-sm text-teal-500 hover:underline mb-4"
+        className="hidden sm:block text-sm text-teal-500 hover:underline mb-4"
       >
         &larr; Back to list
       </button>
