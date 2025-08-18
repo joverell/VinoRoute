@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
-import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
+import { DecodedIdToken } from 'firebase-admin/auth';
 
 const { adminDb, adminAuth } = initializeFirebaseAdmin();
 
