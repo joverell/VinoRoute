@@ -56,3 +56,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function GET() {
+    const { adminDb } = initializeFirebaseAdmin();
+    try {
+        if (!adminDb) {
+            return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
+        }
+        const locationsCollection = adminDb.collection('locations');
+        const snapshot = await locationsCollection.get();
+        const locations = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }) as Winery);
+
+        return NextResponse.json(locations);
+    } catch (error) {
+        console.error('Error fetching locations:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
