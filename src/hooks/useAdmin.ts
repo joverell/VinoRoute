@@ -10,7 +10,7 @@ export function useAdmin(user: User | null) {
     const checkAdminStatus = async () => {
       if (user) {
         try {
-          const idTokenResult = await user.getIdTokenResult();
+          const idTokenResult = await user.getIdTokenResult(true);
           setIsAdmin(!!idTokenResult.claims.isAdmin);
         } catch (error) {
           console.error("Error checking admin status:", error);
