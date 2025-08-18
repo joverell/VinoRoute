@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
-import { CollectionReference } from 'firebase-admin/firestore';
 import { Winery } from '@/types';
 
-const { adminDb, adminAuth } = initializeFirebaseAdmin();
-
 export async function POST(request: Request) {
+  const { adminDb, adminAuth } = initializeFirebaseAdmin();
   try {
     if (!adminDb || !adminAuth) {
       return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });

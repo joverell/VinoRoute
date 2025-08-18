@@ -10,7 +10,6 @@ import { SavedTour } from '@/types';
 import AddCustomStopForm from './AddCustomStopForm';
 import { Region } from '@/types';
 import { User } from 'firebase/auth';
-import Auth from './Auth';
 
 const getNextSaturday10AM = () => {
   const now = new Date();
@@ -58,14 +57,10 @@ interface SidebarProps {
   onAddCustomStop: (name: string, address: string, duration: number) => void;
   selectedRegion: Region;
   onRegionSelection: (value: string) => void;
-  includeDistilleries: boolean;
-  onToggleDistilleries: () => void;
   availableWineries: Winery[];
   regions: Region[];
   prepopulatedStop: PrepopulatedStop | null;
   onClearPrepopulatedStop: () => void;
-  showRegionOverlay: boolean;
-  onToggleRegionOverlay: () => void;
   filterMode: 'region' | 'state' | 'country';
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
@@ -78,9 +73,9 @@ export default function Sidebar({
   tripStops, onAddToTrip, onRemoveFromTrip, onReorderWineries, itinerary,
   startTime, onStartTimeChange, onOptimizeRoute, defaultDuration,
   onDefaultDurationChange, onDurationChange, selectedWinery, onSelectWinery, onAddCustomStop,
-  selectedRegion, onRegionSelection, includeDistilleries, onToggleDistilleries,
+  selectedRegion, onRegionSelection,
   availableWineries, regions, prepopulatedStop, onClearPrepopulatedStop,
-  showRegionOverlay, onToggleRegionOverlay, filterMode,
+  filterMode,
   searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
