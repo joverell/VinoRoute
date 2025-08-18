@@ -3,10 +3,26 @@ import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { CollectionReference } from 'firebase-admin/firestore';
 import { Winery } from '@/types';
 
-const { adminDb, adminAuth } = initializeFirebaseAdmin();
+export async function GET() {
+  try {
+    const { adminDb } = initializeFirebaseAdmin();
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Firebase not initialized' }, { status: 500 });
+    }
+
+    const locationsSnapshot = await adminDb.collection('locations').get();
+    const locations = locationsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    return NextResponse.json(locations);
+  } catch (error) {
+    console.error('Error fetching locations:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {
+    const { adminDb, adminAuth } = initializeFirebaseAdmin();
     if (!adminDb || !adminAuth) {
       return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
