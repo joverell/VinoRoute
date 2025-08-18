@@ -3,7 +3,7 @@ import { adminDb, adminAuth } from '@/utils/firebase-admin';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authorization = request.headers.get('Authorization');
@@ -14,7 +14,7 @@ export async function PATCH(
     const token = authorization.split('Bearer ')[1];
     await adminAuth.verifyIdToken(token);
 
-    const { id } = params;
+    const { id } = await params;
     const { url } = await request.json();
 
     if (!id || typeof url !== 'string') {
