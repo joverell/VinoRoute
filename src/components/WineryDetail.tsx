@@ -3,9 +3,12 @@ import { Winery } from "@/types";
 interface WineryDetailProps {
   winery: Winery;
   onClearSelection: () => void;
+  onAddToTrip: (winery: Winery) => void;
+  onRemoveFromTrip: (wineryId: number | string) => void;
+  isInTrip: boolean;
 }
 
-export default function WineryDetail({ winery, onClearSelection }: WineryDetailProps) {
+export default function WineryDetail({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip }: WineryDetailProps) {
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <button
@@ -28,20 +31,24 @@ export default function WineryDetail({ winery, onClearSelection }: WineryDetailP
           {winery.state && <p className="flex items-center"><span className="w-20 font-bold shrink-0">State</span><span className="text-gray-800">{winery.state}</span></p>}
           <p className="flex items-center"><span className="w-20 font-bold shrink-0">Region</span><span className="text-gray-800">{winery.region}</span></p>
           <p className="flex items-center"><span className="w-20 font-bold shrink-0">Type</span><span className="capitalize text-gray-800">{winery.type}</span></p>
-          {winery.url && (
-            <p className="flex items-start">
-              <span className="w-20 font-bold shrink-0">Website</span>
-              <a
-                href={winery.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-teal-500 hover:underline break-all"
-              >
-                {winery.url}
-              </a>
-            </p>
-          )}
         </div>
+      </div>
+      <div className="mt-4">
+        {isInTrip ? (
+          <button
+            onClick={() => onRemoveFromTrip(winery.id)}
+            className="w-full px-4 py-2 font-bold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+          >
+            Remove from Tour
+          </button>
+        ) : (
+          <button
+            onClick={() => onAddToTrip(winery)}
+            className="w-full px-4 py-2 font-bold text-white bg-rose-500 rounded-lg hover:bg-rose-600"
+          >
+            Add to My Tour
+          </button>
+        )}
       </div>
     </div>
   );
