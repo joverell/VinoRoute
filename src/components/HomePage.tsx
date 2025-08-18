@@ -23,6 +23,12 @@ export interface ClickedPoi { name: string; coords: google.maps.LatLngLiteral; }
 const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['maps', 'routes', 'marker', 'places'];
 const LOCAL_STORAGE_KEY = 'wineryTourData';
 
+const AUSTRALIA_REGION: Region = {
+  name: "Australia",
+  state: "Australia",
+  center: { lat: -25.2744, lng: 133.7751 }, // Center of Australia
+};
+
 export default function HomePage() {
   const [allLocations, setAllLocations] = useState<Winery[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
@@ -39,7 +45,7 @@ export default function HomePage() {
   const [user, setUser] = useState<User | null>(null);
   const [savedTours, setSavedTours] = useState<SavedTour[]>([]);
   const [showRegionOverlay, setShowRegionOverlay] = useState(false);
-  const [filterMode, setFilterMode] = useState<'region' | 'state'>('region');
+  const [filterMode, setFilterMode] = useState<'region' | 'state' | 'country'>('region');
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBoundsLiteral | null>(null); // <-- NEW STATE FOR BOUNDS
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -339,16 +345,20 @@ export default function HomePage() {
   };
 
   const handleRegionSelection = (value: string) => {
-    setMapBounds(null); // Clear any previous bounds
-    if (value.startsWith('state-')) {
+    setMapBounds(null);
+    if (value === 'Australia') {
+      setSelectedRegion(AUSTRALIA_REGION);
+      setFilterMode('country');
+      const bounds = new window.google.maps.LatLngBounds();
+      allLocations.forEach(w => bounds.extend(w.coords));
+      setMapBounds(bounds.toJSON());
+    } else if (value.startsWith('state-')) {
       const stateName = value.replace('state-', '');
       const firstRegionInState = regions.find(r => r.state === stateName);
       if (firstRegionInState) {
         setSelectedRegion(firstRegionInState);
         setFilterMode('state');
-
-        // Calculate bounds for the entire state
-        const stateWineries = allLocations.filter(loc => loc.region.endsWith(stateName.split(' ')[0]));
+        const stateWineries = allLocations.filter(loc => loc.state === stateName);
         if (stateWineries.length > 0 && window.google) {
           const bounds = new window.google.maps.LatLngBounds();
           stateWineries.forEach(w => bounds.extend(w.coords));
@@ -376,9 +386,14 @@ export default function HomePage() {
     const inTrip = tripStops.some(stop => stop.winery.id === w.id);
     if (inTrip) return true;
 
-    const regionMatch = filterMode === 'state' && selectedRegion
-      ? w.state === selectedRegion.state
-      : w.region === selectedRegion?.name;
+    let regionMatch;
+    if (filterMode === 'country') {
+      regionMatch = true;
+    } else if (filterMode === 'state' && selectedRegion) {
+      regionMatch = w.state === selectedRegion.state;
+    } else {
+      regionMatch = w.region === selectedRegion?.name;
+    }
 
     const typeMatch = includeDistilleries || w.type === 'winery';
 

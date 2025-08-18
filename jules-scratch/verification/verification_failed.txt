@@ -1,4 +1,0 @@
-Failed to connect to server and take screenshot.
-Page.goto: Timeout 5000ms exceeded.
-Call log:
-  - navigating to "http://localhost:3000/", waiting until "load"
