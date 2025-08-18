@@ -101,7 +101,12 @@ export default function HomePage() {
         const regionMap = new Map<string, Region>();
         locationsData.forEach(loc => {
           if (!regionMap.has(loc.region)) {
-            regionMap.set(loc.region, { name: loc.region, center: loc.coords, state: loc.state! });
+            const newRegion: Region = {
+              name: loc.region,
+              center: loc.coords,
+              state: loc.state!,
+            };
+            regionMap.set(loc.region, newRegion);
           }
         });
         const dynamicRegions = Array.from(regionMap.values()).sort((a, b) => a.state.localeCompare(b.state) || a.name.localeCompare(b.name));
