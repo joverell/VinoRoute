@@ -149,6 +149,7 @@ export default function Sidebar({
           <button onClick={() => setView('saved')} className={`flex-1 pb-2 font-semibold ${view === 'saved' ? 'border-b-2 border-teal-500 text-teal-600' : 'text-gray-500'}`}>Saved Tours ({savedTours.length})</button>
         )}
       </div>
+
       {view === 'planner' && (
         <div>
           <div className="p-4 mb-4 border rounded-lg">
@@ -209,6 +210,7 @@ export default function Sidebar({
           {tripStops.length > 0 && (
             <div className="mb-4 printable">
               <div className="flex items-center justify-between mb-2">
+
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold text-gray-700">My Tour ({tripStops.length})</h3>
                   <div
@@ -223,6 +225,7 @@ export default function Sidebar({
                       </div>
                     )}
                   </div>
+
                 </div>
                 <div className="flex items-center gap-2">
                   {itinerary && (
@@ -266,6 +269,7 @@ export default function Sidebar({
                           </div>
                         </div>
                         {stopInfo?.warning && <p className="pl-16 text-xs font-bold text-red-600">{stopInfo.warning}</p>}
+
                       </div>
                       {stopInfo?.travelTimeToNext && (
                         <div className="pl-8 text-xs text-center text-gray-500">&#8595; <em>Travel: {stopInfo.travelTimeToNext.text}</em></div>
@@ -347,6 +351,7 @@ export default function Sidebar({
           </div>
         </div>
       )}
+
 
       {view === 'saved' && user && (
         <div>
