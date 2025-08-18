@@ -280,6 +280,7 @@ export default function Sidebar({
                 onAddToTrip={onAddToTrip}
                 onRemoveFromTrip={onRemoveFromTrip}
                 isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
+                user={user}
               />
             ) : (
               <>

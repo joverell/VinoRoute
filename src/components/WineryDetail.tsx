@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { User } from 'firebase/auth';
 import { Winery } from "@/types";
 
 interface WineryDetailProps {
@@ -6,9 +8,50 @@ interface WineryDetailProps {
   onAddToTrip: (winery: Winery) => void;
   onRemoveFromTrip: (wineryId: number | string) => void;
   isInTrip: boolean;
+  user: User | null;
 }
 
-export default function WineryDetail({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip }: WineryDetailProps) {
+export default function WineryDetail({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip, user }: WineryDetailProps) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRatingSubmit = async () => {
+    if (!user) {
+      alert('Please log in to rate this location.');
+      return;
+    }
+    if (rating === 0) {
+      alert('Please select a rating.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const token = await user.getIdToken();
+      await fetch('/api/ratings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          wineryId: winery.id,
+          rating,
+          comment,
+        }),
+      });
+      // Optionally, refresh data or show a success message
+      alert('Rating submitted!');
+      setRating(0);
+      setComment('');
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      alert('Failed to submit rating.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <button
@@ -33,6 +76,37 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
           <p className="flex items-center"><span className="w-20 font-bold shrink-0">Type</span><span className="capitalize text-gray-800">{winery.type}</span></p>
         </div>
       </div>
+
+      {user && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h4 className="text-lg font-bold text-gray-800 mb-2">Rate this location</h4>
+          <div className="flex items-center mb-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => setRating(star)}
+                className={`text-2xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+              >
+                &#9733;
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Optional comment"
+            className="w-full p-2 border rounded-md"
+          />
+          <button
+            onClick={handleRatingSubmit}
+            disabled={isSubmitting}
+            className="w-full px-4 py-2 mt-2 font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+          </button>
+        </div>
+      )}
+
       <div className="mt-4">
         {isInTrip ? (
           <button
