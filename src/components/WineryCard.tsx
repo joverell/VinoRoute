@@ -10,6 +10,20 @@ interface WineryCardProps {
   onTagClick: (tag: string) => void;
 }
 
+const StarRating = ({ rating, count }: { rating: number; count: number }) => {
+  const fullStars = Math.round(rating);
+  return (
+    <div className="flex items-center">
+      {[...Array(5)].map((_, i) => (
+        <span key={i} className={`text-xl ${i < fullStars ? 'text-yellow-400' : 'text-gray-300'}`}>
+          &#9733;
+        </span>
+      ))}
+      <span className="ml-2 text-sm text-gray-600">({count} reviews)</span>
+    </div>
+  );
+};
+
 export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isInTrip, isSelected, onSelect, onTagClick }: WineryCardProps) {
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Prevent card click when clicking on a button (including tag buttons)
@@ -31,6 +45,11 @@ export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isIn
     >
       <div>
         <h3 className="text-lg font-bold text-gray-800">{winery.name}</h3>
+        {winery.averageRating !== undefined && winery.ratingCount !== undefined && (
+          <div className="mt-2">
+            <StarRating rating={winery.averageRating} count={winery.ratingCount} />
+          </div>
+        )}
         <div className="flex flex-wrap gap-2 mt-2">
           {winery.tags.map((tag) => (
             <button
