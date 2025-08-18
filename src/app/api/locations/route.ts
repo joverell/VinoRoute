@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/utils/firebase-admin';
+import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { CollectionReference } from 'firebase-admin/firestore';
 import { Winery } from '@/types';
 
+const { adminDb, adminAuth } = initializeFirebaseAdmin();
+
 export async function POST(request: Request) {
   try {
+    if (!adminDb || !adminAuth) {
+      return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
+    }
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
