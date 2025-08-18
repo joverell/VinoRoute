@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { CollectionReference } from 'firebase-admin/firestore';
 import { Winery } from '@/types';
+import { headers } from 'next/headers';
 
 export async function GET() {
   try {
@@ -26,13 +27,29 @@ export async function POST(request: Request) {
     if (!adminDb || !adminAuth) {
       return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
-    const authorization = request.headers.get('Authorization');
+    const authorization = headers().get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const token = authorization.split('Bearer ')[1];
-    await adminAuth.verifyIdToken(token);
+    const decodedToken = await adminAuth.verifyIdToken(token);
+    const uid = decodedToken.uid;
+
+    if (!uid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userDoc = await adminDb.collection('users').doc(uid).get();
+
+    if (!userDoc.exists) {
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
+    }
+
+    const userData = userDoc.data();
+    if (userData?.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     const wineryData: Omit<Winery, 'id'> = await request.json();
 
