@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
-import { DecodedIdToken } from 'firebase-admin/lib/auth/token-verifier';
+import { DecodedIdToken, Auth } from 'firebase-admin/auth';
 
-const { adminDb, adminAuth } = initializeFirebaseAdmin();
-
-async function getAuthenticatedUser(request: Request): Promise<DecodedIdToken | null> {
+async function getAuthenticatedUser(request: Request, adminAuth: Auth | null): Promise<DecodedIdToken | null> {
     if (!adminAuth) return null;
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -21,8 +19,9 @@ async function getAuthenticatedUser(request: Request): Promise<DecodedIdToken | 
 }
 
 export async function POST(request: Request) {
+  const { adminDb, adminAuth } = initializeFirebaseAdmin();
   try {
-    const user = await getAuthenticatedUser(request);
+    const user = await getAuthenticatedUser(request, adminAuth);
     if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
