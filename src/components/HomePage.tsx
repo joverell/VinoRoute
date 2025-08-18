@@ -103,30 +103,20 @@ export default function HomePage() {
 
         setAllLocations(locationsData);
 
-        const regionMap = new Map<string, Region>();
-        locationsData.forEach(loc => {
-          if (!regionMap.has(loc.region)) {
-            const newRegion: Region = {
-              name: loc.region,
-              center: loc.coords,
-              state: loc.state!,
-            };
-            regionMap.set(loc.region, newRegion);
-          }
-        });
-        const dynamicRegions = Array.from(regionMap.values()).sort((a, b) => a.state.localeCompare(b.state) || a.name.localeCompare(b.name));
-        setRegions(dynamicRegions);
-        
+        const regionsResponse = await fetch('/api/regions');
+        const regionsData: Region[] = await regionsResponse.json();
+        setRegions(regionsData);
+
         const sharedTourId = searchParams.get('tour');
         if (sharedTourId) {
           const tourDocRef = doc(db, 'tours', sharedTourId);
           const tourDocSnap = await getDoc(tourDocRef);
           if (tourDocSnap.exists()) {
             const tourData = { id: tourDocSnap.id, ...tourDocSnap.data() } as SavedTour;
-            handleLoadTour(tourData, locationsData, dynamicRegions);
+            handleLoadTour(tourData, locationsData, regionsData);
           } else {
             console.warn("Shared tour not found.");
-            if (dynamicRegions.length > 0) setSelectedRegion(dynamicRegions[0]);
+            if (regionsData.length > 0) setSelectedRegion(regionsData[0]);
           }
         } else {
           const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -148,14 +138,14 @@ export default function HomePage() {
               setIncludeDistilleries(includeDistilleries === undefined ? true : includeDistilleries);
               setFilterMode(filterMode || 'region');
 
-              const regionToSelect = dynamicRegions.find(r => r.name === selectedRegionName) || dynamicRegions[0] || null;
+              const regionToSelect = regionsData.find(r => r.name === selectedRegionName) || regionsData[0] || null;
               setSelectedRegion(regionToSelect);
             } catch (e) {
               console.error("Failed to parse saved tour data, starting fresh.", e);
-              if (dynamicRegions.length > 0) setSelectedRegion(dynamicRegions[0]);
+              if (regionsData.length > 0) setSelectedRegion(regionsData[0]);
             }
           } else {
-            if (dynamicRegions.length > 0) setSelectedRegion(dynamicRegions[0]);
+            if (regionsData.length > 0) setSelectedRegion(regionsData[0]);
           }
         }
       } catch (error) {
