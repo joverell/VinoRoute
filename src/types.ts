@@ -1,8 +1,20 @@
 // src/types.ts
 
+export interface Rating {
+  id: string;
+  wineryId: string | number;
+  userId: string;
+  rating: number;
+  comment?: string;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
+}
+
 // The Winery and Region interfaces remain the same
 export interface Winery {
-  id: string | number;
+  id:string | number;
   name: string;
   coords: { lat: number; lng: number };
   tags: string[];
@@ -13,6 +25,8 @@ export interface Winery {
   address?: string;
   state?: string;
   url?: string;
+  averageRating?: number;
+  ratingCount?: number;
 }
 
 export interface Region {
