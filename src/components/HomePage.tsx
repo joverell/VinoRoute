@@ -20,6 +20,7 @@ export interface PrepopulatedStop { name: string; address: string; }
 export interface ClickedPoi { name: string; coords: google.maps.LatLngLiteral; }
 
 const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['maps', 'routes', 'marker', 'places'];
+const LOCAL_STORAGE_KEY = 'wineryTourData';
 
 export default function HomePage() {
   const [allLocations, setAllLocations] = useState<Winery[]>([]);
@@ -39,6 +40,7 @@ export default function HomePage() {
   const [showRegionOverlay, setShowRegionOverlay] = useState(false);
   const [filterMode, setFilterMode] = useState<'region' | 'state'>('region');
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBoundsLiteral | null>(null); // <-- NEW STATE FOR BOUNDS
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const searchParams = useSearchParams();
 
@@ -124,14 +126,58 @@ export default function HomePage() {
             if (dynamicRegions.length > 0) setSelectedRegion(dynamicRegions[0]);
           }
         } else {
-          if (dynamicRegions.length > 0) setSelectedRegion(dynamicRegions[0]);
+          const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+          if (savedData) {
+            try {
+              const { tripStops: savedStops, startTime, selectedRegionName, includeDistilleries, filterMode, defaultDuration } = JSON.parse(savedData);
+
+              const rehydratedStops = savedStops.map((stop: TripStop) => {
+                if (stop.winery.type && stop.winery.type !== 'winery') {
+                  return stop;
+                }
+                const freshWinery = locationsData.find(loc => loc.id === stop.winery.id);
+                return freshWinery ? { ...stop, winery: freshWinery } : null;
+              }).filter(Boolean);
+
+              setTripStops(rehydratedStops);
+              setStartTime(startTime);
+              setDefaultDuration(defaultDuration || 60);
+              setIncludeDistilleries(includeDistilleries === undefined ? true : includeDistilleries);
+              setFilterMode(filterMode || 'region');
+
+              const regionToSelect = dynamicRegions.find(r => r.name === selectedRegionName) || dynamicRegions[0] || null;
+              setSelectedRegion(regionToSelect);
+            } catch (e) {
+              console.error("Failed to parse saved tour data, starting fresh.", e);
+              if (dynamicRegions.length > 0) setSelectedRegion(dynamicRegions[0]);
+            }
+          } else {
+            if (dynamicRegions.length > 0) setSelectedRegion(dynamicRegions[0]);
+          }
         }
       } catch (error) {
         console.error("Error initializing app data: ", error);
+      } finally {
+        setIsInitialLoad(false);
       }
     };
     initializeApp();
   }, [searchParams, handleLoadTour]);
+
+  useEffect(() => {
+    if (isInitialLoad || allLocations.length === 0) {
+      return;
+    }
+    const dataToSave = {
+      tripStops,
+      startTime,
+      selectedRegionName: selectedRegion?.name,
+      includeDistilleries,
+      filterMode,
+      defaultDuration,
+    };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [tripStops, startTime, selectedRegion, includeDistilleries, filterMode, defaultDuration, allLocations, isInitialLoad]);
 
   useEffect(() => {
     if (user && allLocations.length > 0) {
