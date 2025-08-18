@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import { Winery, Region, SavedTour } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
+import Banner from './Banner';
 import { db, auth } from '@/utils/firebase';
 import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -407,6 +408,7 @@ export default function HomePage() {
 
   return (
     <>
+      <Banner />
       <main className="flex w-screen h-screen print:hidden">
         <Sidebar
           user={user}
