@@ -1,6 +1,10 @@
 import React from 'react';
 import { User } from 'firebase/auth';
 import Auth from './Auth';
+import { useUser } from '@/hooks/useUser';
+import Link from 'next/link';
+import Image from 'next/image';
+
 
 interface BannerProps {
   user: User | null;
@@ -20,7 +24,7 @@ const Banner = ({
   return (
     <div className="bg-gray-800 text-white p-4 flex flex-wrap items-center justify-between print:hidden">
       <div className="flex items-center">
-        <div className="w-12 h-12 bg-gray-700 rounded-full mr-4 flex-shrink-0"></div>
+        <Image src="/content/logo.png" alt="VinoRoute Logo" width={48} height={48} className="rounded-full mr-4" />
         <div>
           <h1 className="text-2xl font-bold">VinoRoute</h1>
           <p className="text-sm">Discover your next favourite drop.</p>
