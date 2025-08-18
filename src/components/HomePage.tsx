@@ -444,14 +444,10 @@ export default function HomePage() {
           onAddCustomStop={handleAddCustomStop}
           selectedRegion={selectedRegion}
           onRegionSelection={handleRegionSelection}
-          includeDistilleries={includeDistilleries}
-          onToggleDistilleries={() => setIncludeDistilleries(!includeDistilleries)}
           availableWineries={availableWineries}
           regions={regions}
           prepopulatedStop={prepopulatedStop}
           onClearPrepopulatedStop={() => setPrepopulatedStop(null)}
-          showRegionOverlay={showRegionOverlay}
-          onToggleRegionOverlay={() => setShowRegionOverlay(!showRegionOverlay)}
           filterMode={filterMode}
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}

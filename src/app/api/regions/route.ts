@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { Region } from '@/types';
 
-const { adminDb, adminAuth } = initializeFirebaseAdmin();
-
 export async function POST(request: Request) {
+  const { adminDb, adminAuth } = initializeFirebaseAdmin();
   try {
     if (!adminDb || !adminAuth) {
       return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
@@ -51,6 +50,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  const { adminDb } = initializeFirebaseAdmin();
   try {
     if (!adminDb) {
       return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
