@@ -8,8 +8,6 @@ import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';
 import { regionBoundaries } from '@/data/regionBoundaries';
 
-const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['maps', 'routes', 'marker', 'places'];
-
 interface MapProps {
   isLoaded: boolean;
   itinerary: ItineraryStop[] | null;

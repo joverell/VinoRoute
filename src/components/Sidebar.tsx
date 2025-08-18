@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Winery } from "@/types";
 import WineryCard from "./WineryCard";
 import { ItineraryStop } from '@/utils/itineraryLogic';
-import { TripStop, PrepopulatedStop, ClickedPoi } from './HomePage';
+import { TripStop, PrepopulatedStop } from './HomePage';
 import { SavedTour } from '@/types';
 import AddCustomStopForm from './AddCustomStopForm';
 import { Region } from '@/types';
