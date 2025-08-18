@@ -1,6 +1,8 @@
 import React from 'react';
 import { User } from 'firebase/auth';
 import Auth from './Auth';
+import { useUser } from '@/hooks/useUser';
+import Link from 'next/link';
 
 interface BannerProps {
   user: User | null;
@@ -17,6 +19,8 @@ const Banner = ({
   includeDistilleries,
   onToggleDistilleries,
 }: BannerProps) => {
+  const { user: appUser } = useUser();
+
   return (
     <div className="bg-gray-800 text-white p-4 flex flex-wrap items-center justify-between print:hidden">
       <div className="flex items-center">
@@ -52,6 +56,11 @@ const Banner = ({
           </div>
         </div>
         <div className="border-l border-gray-600 h-10 mx-4"></div>
+        {appUser?.role === 'admin' && (
+          <Link href="/admin" className="text-white bg-teal-600 hover:bg-teal-700 px-3 py-2 rounded-md text-sm font-medium">
+            Admin
+          </Link>
+        )}
         <Auth user={user} />
       </div>
     </div>
