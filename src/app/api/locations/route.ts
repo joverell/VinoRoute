@@ -2,54 +2,21 @@ import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { CollectionReference } from 'firebase-admin/firestore';
 import { Winery } from '@/types';
-import { headers } from 'next/headers';
 
-export async function GET() {
-  try {
-    const { adminDb } = initializeFirebaseAdmin();
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Firebase not initialized' }, { status: 500 });
-    }
-
-    const locationsSnapshot = await adminDb.collection('locations').get();
-    const locations = locationsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    return NextResponse.json(locations);
-  } catch (error) {
-    console.error('Error fetching locations:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-  }
-}
+const { adminDb, adminAuth } = initializeFirebaseAdmin();
 
 export async function POST(request: Request) {
   try {
-    const { adminDb, adminAuth } = initializeFirebaseAdmin();
     if (!adminDb || !adminAuth) {
       return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
-    const authorization = headers().get('Authorization');
+    const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const token = authorization.split('Bearer ')[1];
-    const decodedToken = await adminAuth.verifyIdToken(token);
-    const uid = decodedToken.uid;
-
-    if (!uid) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userDoc = await adminDb.collection('users').doc(uid).get();
-
-    if (!userDoc.exists) {
-      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
-    }
-
-    const userData = userDoc.data();
-    if (userData?.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    await adminAuth.verifyIdToken(token);
 
     const wineryData: Omit<Winery, 'id'> = await request.json();
 

@@ -1,5 +1,14 @@
 // src/types.ts
 
+export interface Wine {
+  lwin: string;
+  name: string;
+  type: string;
+  producer: string;
+  region: string;
+  country: string;
+}
+
 export interface Rating {
   id: string;
   wineryId: string | number;
@@ -27,6 +36,7 @@ export interface Winery {
   url?: string;
   averageRating?: number;
   ratingCount?: number;
+  wines?: Wine[];
 }
 
 export interface Region {

@@ -9,10 +9,9 @@ interface WineryDetailProps {
   onRemoveFromTrip: (wineryId: number | string) => void;
   isInTrip: boolean;
   user: User | null;
-  onWineryRated: () => void;
 }
 
-export default function WineryDetail({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip, user, onWineryRated }: WineryDetailProps) {
+export default function WineryDetail({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip, user }: WineryDetailProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +44,6 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
       alert('Rating submitted!');
       setRating(0);
       setComment('');
-      onWineryRated();
     } catch (error) {
       console.error('Error submitting rating:', error);
       alert('Failed to submit rating.');
@@ -78,6 +76,19 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
           <p className="flex items-center"><span className="w-20 font-bold shrink-0">Type</span><span className="capitalize text-gray-800">{winery.type}</span></p>
         </div>
       </div>
+
+      {winery.wines && winery.wines.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h4 className="text-lg font-bold text-gray-800 mb-2">Wines</h4>
+          <ul>
+            {winery.wines.map(wine => (
+              <li key={wine.lwin}>
+                {wine.name} ({wine.type})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {user && (
         <div className="mt-4 pt-4 border-t border-gray-200">
