@@ -9,10 +9,9 @@ interface WineryDetailProps {
   onRemoveFromTrip: (wineryId: number | string) => void;
   isInTrip: boolean;
   user: User | null;
-  onWineryRated: () => void;
 }
 
-export default function WineryDetail({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip, user, onWineryRated }: WineryDetailProps) {
+export default function WineryDetail({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip, user }: WineryDetailProps) {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,7 +44,6 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
       alert('Rating submitted!');
       setRating(0);
       setComment('');
-      onWineryRated();
     } catch (error) {
       console.error('Error submitting rating:', error);
       alert('Failed to submit rating.');
