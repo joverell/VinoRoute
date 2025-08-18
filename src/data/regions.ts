@@ -1,12 +1,4 @@
-
-export interface Region {
-  name: string;
-  state: string;
-  center: {
-    lat: number;
-    lng: number;
-  };
-}
+import { Region } from '@/types';
 
 export const regions: Region[] = [
   // --- SOUTH AUSTRALIA ---
