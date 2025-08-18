@@ -1,8 +1,9 @@
+require('dotenv').config({ path: '.env.local' });
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, doc, writeBatch } = require('firebase/firestore');
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBfSjTtaQtAmLTJNdqW0TfTy9FwT0iSlo4",
+  apiKey: process.env.FIREBASE_API_KEY,
   authDomain: "vinoroute-e8d8d.firebaseapp.com",
   projectId: "vinoroute-e8d8d",
   storageBucket: "vinoroute-e8d8d.appspot.com",
