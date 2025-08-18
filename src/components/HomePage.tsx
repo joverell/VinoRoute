@@ -40,6 +40,8 @@ export default function HomePage() {
   const [showRegionOverlay, setShowRegionOverlay] = useState(false);
   const [filterMode, setFilterMode] = useState<'region' | 'state'>('region');
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBoundsLiteral | null>(null); // <-- NEW STATE FOR BOUNDS
+  const [searchTags, setSearchTags] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const searchParams = useSearchParams();
@@ -370,11 +372,33 @@ export default function HomePage() {
     }
   };
 
+  const handleTagFilterChange = (tag: string) => {
+    setSearchTags(prevTags =>
+      prevTags.includes(tag)
+        ? prevTags.filter(t => t !== tag)
+        : [...prevTags, tag]
+    );
+  };
+
   const availableWineries = allLocations.filter(w => {
-    if (filterMode === 'state' && selectedRegion) {
-      return w.state === selectedRegion.state && (includeDistilleries || w.type === 'winery');
-    }
-    return w.region === selectedRegion?.name && (includeDistilleries || w.type === 'winery');
+    const inTrip = tripStops.some(stop => stop.winery.id === w.id);
+    if (inTrip) return true;
+
+    const regionMatch = filterMode === 'state' && selectedRegion
+      ? w.state === selectedRegion.state
+      : w.region === selectedRegion?.name;
+
+    const typeMatch = includeDistilleries || w.type === 'winery';
+
+    const searchMatch = searchTerm.length > 0
+      ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      : true;
+
+    const tagMatch = searchTags.length > 0
+      ? searchTags.every(tag => w.tags.includes(tag))
+      : true;
+
+    return regionMatch && typeMatch && searchMatch && tagMatch;
   });
 
   if (!selectedRegion || !isLoaded) {
@@ -415,6 +439,10 @@ export default function HomePage() {
           showRegionOverlay={showRegionOverlay}
           onToggleRegionOverlay={() => setShowRegionOverlay(!showRegionOverlay)}
           filterMode={filterMode}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+          searchTags={searchTags}
+          onTagFilterChange={handleTagFilterChange}
         />
         <div className="flex-grow h-full">
           <MapComponent

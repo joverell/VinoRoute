@@ -66,6 +66,10 @@ interface SidebarProps {
   showRegionOverlay: boolean;
   onToggleRegionOverlay: () => void;
   filterMode: 'region' | 'state'; // New prop
+  searchTerm: string;
+  onSearchTermChange: (term: string) => void;
+  searchTags: string[];
+  onTagFilterChange: (tag: string) => void;
 }
 
 export default function Sidebar({
@@ -75,7 +79,8 @@ export default function Sidebar({
   onDefaultDurationChange, onDurationChange, selectedWinery, onSelectWinery, onAddCustomStop,
   selectedRegion, onRegionSelection, includeDistilleries, onToggleDistilleries,
   availableWineries, regions, prepopulatedStop, onClearPrepopulatedStop,
-  showRegionOverlay, onToggleRegionOverlay, filterMode
+  showRegionOverlay, onToggleRegionOverlay, filterMode,
+  searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -280,15 +285,39 @@ export default function Sidebar({
                   </div>
                 </div>
                 {showCustomForm && <AddCustomStopForm onAdd={handleAddCustomAndClose} onCancel={handleCancelCustomForm} defaultDuration={defaultDuration} prepopulatedData={prepopulatedStop} />}
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search wineries or tags..."
+                    value={searchTerm}
+                    onChange={(e) => onSearchTermChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                  />
+                  {searchTags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
+                      <span className="text-sm font-medium text-gray-700">Filtering by:</span>
+                      {searchTags.map(tag => (
+                        <button
+                          key={tag}
+                          onClick={() => onTagFilterChange(tag)}
+                          className="px-2 py-1 text-xs text-white bg-rose-500 rounded-full hover:bg-rose-600"
+                        >
+                          {tag} &times;
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="flex flex-col gap-4 mt-4">
                   {availableWineries.map((winery) => (
-                    <WineryCard 
-                      key={winery.id} 
-                      winery={winery} 
+                    <WineryCard
+                      key={winery.id}
+                      winery={winery}
                       onAddToTrip={onAddToTrip}
-                      onRemoveFromTrip={onRemoveFromTrip} 
+                      onRemoveFromTrip={onRemoveFromTrip}
                       isInTrip={tripStops.some(stop => stop.winery.id === winery.id)}
                       onSelect={onSelectWinery}
+                      onTagClick={onTagFilterChange}
                     />
                   ))}
                 </div>
