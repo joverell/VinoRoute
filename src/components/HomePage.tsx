@@ -11,7 +11,7 @@ import Banner from './Banner';
 import { db, auth } from '@/utils/firebase';
 import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useGoogleMaps } from '@/app/GoogleMapsProvider';
 
 export interface TripStop {
   winery: Winery;
@@ -20,7 +20,6 @@ export interface TripStop {
 export interface PrepopulatedStop { name: string; address: string; }
 export interface ClickedPoi { name: string; coords: google.maps.LatLngLiteral; }
 
-const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['maps', 'routes', 'marker', 'places'];
 const LOCAL_STORAGE_KEY = 'wineryTourData';
 
 const AUSTRALIA_REGION: Region = {
@@ -53,11 +52,7 @@ export default function HomePage() {
 
   const searchParams = useSearchParams();
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-    libraries: MAP_LIBRARIES,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);

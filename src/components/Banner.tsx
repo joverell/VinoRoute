@@ -1,8 +1,6 @@
 import React from 'react';
 import { User } from 'firebase/auth';
 import Auth from './Auth';
-import { useUser } from '@/hooks/useUser';
-import Link from 'next/link';
 import Image from 'next/image';
 
 
