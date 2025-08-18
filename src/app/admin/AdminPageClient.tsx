@@ -5,9 +5,7 @@ import { Region, Winery } from '@/types';
 import { db, auth } from '@/utils/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { useJsApiLoader } from '@react-google-maps/api';
-
-const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['places'];
+import { useGoogleMaps } from '../GoogleMapsProvider';
 
 export default function AdminPage() {
   const [regions, setRegions] = useState<Region[]>([]);
@@ -26,11 +24,7 @@ export default function AdminPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script-admin',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-    libraries: MAP_LIBRARIES,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   useEffect(() => {
     if (isLoaded) {
