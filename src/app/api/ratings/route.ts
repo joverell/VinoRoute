@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
-import { Auth, DecodedIdToken } from 'firebase-admin/auth';
+import { DecodedIdToken } from 'firebase-admin/auth';
 
 async function getAuthenticatedUser(request: Request, adminAuth: Auth | null): Promise<DecodedIdToken | null> {
     if (!adminAuth) return null;
