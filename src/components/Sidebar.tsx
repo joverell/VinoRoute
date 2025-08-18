@@ -66,7 +66,7 @@ interface SidebarProps {
   onClearPrepopulatedStop: () => void;
   showRegionOverlay: boolean;
   onToggleRegionOverlay: () => void;
-  filterMode: 'region' | 'state';
+  filterMode: 'region' | 'state' | 'country';
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
   searchTags: string[];
@@ -137,7 +137,11 @@ export default function Sidebar({
     return acc;
   }, {} as Record<string, Region[]>);
 
-  const selectValue = filterMode === 'state' ? `state-${selectedRegion.state}` : selectedRegion.name;
+  const selectValue = filterMode === 'country'
+    ? 'Australia'
+    : filterMode === 'state'
+    ? `state-${selectedRegion.state}`
+    : selectedRegion.name;
 
   return (
     <div className="w-full sm:w-96 h-full p-4 overflow-y-auto bg-white shadow-lg flex-shrink-0 print:hidden">
@@ -160,6 +164,7 @@ export default function Sidebar({
                 onChange={(e) => onRegionSelection(e.target.value)}
                 className="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm"
               >
+                <option value="Australia">All of Australia</option>
                 {Object.entries(groupedRegions).map(([state, stateRegions]) => (
                   <optgroup key={state} label={state}>
                     <option value={`state-${state}`}>{`All of ${state}`}</option>
