@@ -12,7 +12,7 @@ interface WineryCardProps {
 export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isInTrip, onSelect, onTagClick }: WineryCardProps) {
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Prevent card click when clicking on a button (including tag buttons)
-    if ((e.target as HTMLElement).closest('button')) {
+    if ((e.target as HTMLElement).closest('a, button')) {
       return;
     }
     onSelect(winery);
@@ -40,6 +40,28 @@ export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isIn
               {tag}
             </button>
           ))}
+        </div>
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="space-y-2 text-sm text-gray-600">
+            {winery.address && <p className="flex items-start"><span className="w-20 font-bold shrink-0">Address</span><span className="text-gray-800">{winery.address}</span></p>}
+            {winery.state && <p className="flex items-center"><span className="w-20 font-bold shrink-0">State</span><span className="text-gray-800">{winery.state}</span></p>}
+            <p className="flex items-center"><span className="w-20 font-bold shrink-0">Region</span><span className="text-gray-800">{winery.region}</span></p>
+            <p className="flex items-center"><span className="w-20 font-bold shrink-0">Type</span><span className="capitalize text-gray-800">{winery.type}</span></p>
+            {winery.url && (
+              <p className="flex items-start">
+                <span className="w-20 font-bold shrink-0">Website</span>
+                <a
+                  href={winery.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-500 hover:underline break-all"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {winery.url}
+                </a>
+              </p>
+            )}
+          </div>
         </div>
       </div>
       
