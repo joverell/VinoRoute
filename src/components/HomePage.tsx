@@ -398,7 +398,13 @@ export default function HomePage() {
 
   return (
     <>
-      <Banner />
+      <Banner
+        user={user}
+        showRegionOverlay={showRegionOverlay}
+        onToggleRegionOverlay={() => setShowRegionOverlay(!showRegionOverlay)}
+        includeDistilleries={includeDistilleries}
+        onToggleDistilleries={() => setIncludeDistilleries(!includeDistilleries)}
+      />
       <main className="flex w-screen h-screen print:hidden">
         <Sidebar
           user={user}
