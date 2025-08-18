@@ -28,11 +28,7 @@ export default function AdminPage() {
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
 
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script-admin',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-    libraries: MAP_LIBRARIES,
-  });
+  const { isLoaded } = useGoogleMaps();
 
   useEffect(() => {
     if (isLoaded) {
@@ -198,31 +194,109 @@ export default function AdminPage() {
                 <input type="text" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} required />
                 <select value={region} onChange={e => setRegion(e.target.value)} required>
                     {regions.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
-                </select>
-                <select value={type} onChange={e => setType(e.target.value as 'winery' | 'distillery')} required>
-                    <option value="winery">Winery</option>
-                    <option value="distillery">Distillery</option>
-                </select>
-                <input type="text" placeholder="Tags (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} />
-                <input type="number" placeholder="Visit Duration (mins)" value={visitDuration} onChange={e => setVisitDuration(parseInt(e.target.value))} required />
-                <button type="submit" disabled={isSubmitting || !isLoaded}>
-                    {isSubmitting ? 'Adding...' : (isLoaded ? 'Add Winery' : 'Loading Maps...')}
-                </button>
-            </form>
-        </>
-      )}
 
-      <h2>Regions and Locations</h2>
-      {regions.map(r => (
-        <div key={r.name} style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '10px' }}>
-          <h3>{r.name}</h3>
-          <ul>
-            {locations.filter(loc => loc.region === r.name).map(loc => (
-              <li key={loc.id}>{loc.name}</li>
-            ))}
-          </ul>
-        </div>
-      ))}
+    <div className="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
+        </header>
+
+        {!user && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <p className="text-center text-gray-600 dark:text-gray-400">Please log in to use the admin tools.</p>
+          </div>
+        )}
+
+        {user && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Column 1: Add Winery Form */}
+            <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
+              <h2 className="text-2xl font-semibold mb-4">Add New Winery</h2>
+              <form onSubmit={handleAddWinery} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Address"
+                  value={address}
+                  onChange={e => setAddress(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                />
+                <select
+                  value={region}
+                  onChange={e => setRegion(e.target.value)}
+                  required
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                >
+                  {regions.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
+
+                </select>
+                <select
+                  value={type}
+                  onChange={e => setType(e.target.value as 'winery' | 'distillery')}
+                  required
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                >
+                  <option value="winery">Winery</option>
+                  <option value="distillery">Distillery</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Tags (comma-separated)"
+                  value={tags}
+                  onChange={e => setTags(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                />
+                <input
+                  type="number"
+                  placeholder="Visit Duration (mins)"
+                  value={visitDuration}
+                  onChange={e => setVisitDuration(parseInt(e.target.value))}
+                  required
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !isLoaded}
+                  className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-300"
+                >
+                  {isSubmitting ? 'Adding...' : (isLoaded ? 'Add Winery' : 'Loading Maps...')}
+                </button>
+              </form>
+            </div>
+
+            {/* Column 2: Regions and Locations */}
+            <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-semibold mb-4">Regions & Locations</h2>
+              <div className="space-y-6">
+                {regions.map(r => (
+                  <div key={r.name} className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <h3 className="text-xl font-semibold text-coral-500">{r.name}</h3>
+                    <ul className="mt-2 space-y-2">
+                      {locations.filter(loc => loc.region === r.name).map(loc => (
+                        <li key={loc.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
+                          <span>{loc.name}</span>
+                          {/* Future actions can go here e.g., edit/delete buttons */}
+                        </li>
+                      ))}
+                      {locations.filter(loc => loc.region === r.name).length === 0 && (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">No locations for this region yet.</p>
+                      )}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

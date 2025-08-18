@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Winery } from "@/types";
 import WineryCard from "./WineryCard";
-import WineryDetail from "./WineryDetail";
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { TripStop, PrepopulatedStop } from './HomePage';
 import { SavedTour } from '@/types';
@@ -268,66 +267,54 @@ export default function Sidebar({
           )}
 
           <div>
-            {selectedWinery ? (
-              <WineryDetail
-                winery={selectedWinery}
-                onClearSelection={() => onSelectWinery(null)}
-                onAddToTrip={onAddToTrip}
-                onRemoveFromTrip={onRemoveFromTrip}
-                isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
-                user={user}
-              />
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-700">Available Locations</h3>
-                  <div className="flex items-center gap-4">
-                    <button onClick={() => setShowCustomForm(!showCustomForm)} className="px-2 py-1 text-xs font-bold text-teal-700 bg-teal-100 rounded-lg hover:bg-teal-200">
-                      {showCustomForm ? 'Cancel' : '+ Custom Stop'}
-                    </button>
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-700">Available Locations</h3>
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setShowCustomForm(!showCustomForm)} className="px-2 py-1 text-xs font-bold text-teal-700 bg-teal-100 rounded-lg hover:bg-teal-200">
+                    {showCustomForm ? 'Cancel' : '+ Custom Stop'}
+                  </button>
+                </div>
+              </div>
+              {showCustomForm && <AddCustomStopForm onAdd={handleAddCustomAndClose} onCancel={handleCancelCustomForm} defaultDuration={defaultDuration} prepopulatedData={prepopulatedStop} />}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search wineries or tags..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchTermChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                />
+                {searchTags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-sm font-medium text-gray-700">Filtering by:</span>
+                    {searchTags.map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => onTagFilterChange(tag)}
+                        className="px-2 py-1 text-xs text-white bg-rose-500 rounded-full hover:bg-rose-600"
+                      >
+                        {tag} &times;
+                      </button>
+                    ))}
                   </div>
-                </div>
-                {showCustomForm && <AddCustomStopForm onAdd={handleAddCustomAndClose} onCancel={handleCancelCustomForm} defaultDuration={defaultDuration} prepopulatedData={prepopulatedStop} />}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    placeholder="Search wineries or tags..."
-                    value={searchTerm}
-                    onChange={(e) => onSearchTermChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                )}
+              </div>
+              <div className="flex flex-col gap-4 mt-4">
+                {availableWineries.map((winery) => (
+                  <WineryCard
+                    key={winery.id}
+                    winery={winery}
+                    onAddToTrip={onAddToTrip}
+                    onRemoveFromTrip={onRemoveFromTrip}
+                    isInTrip={tripStops.some(stop => stop.winery.id === winery.id)}
+                    isSelected={selectedWinery?.id === winery.id}
+                    onSelect={onSelectWinery}
+                    onTagClick={onTagFilterChange}
                   />
-                  {searchTags.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="text-sm font-medium text-gray-700">Filtering by:</span>
-                      {searchTags.map(tag => (
-                        <button
-                          key={tag}
-                          onClick={() => onTagFilterChange(tag)}
-                          className="px-2 py-1 text-xs text-white bg-rose-500 rounded-full hover:bg-rose-600"
-                        >
-                          {tag} &times;
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-4 mt-4">
-                  {availableWineries.map((winery) => (
-                    <WineryCard
-                      key={winery.id}
-                      winery={winery}
-                      onAddToTrip={onAddToTrip}
-                      onRemoveFromTrip={onRemoveFromTrip}
-                      isInTrip={tripStops.some(stop => stop.winery.id === winery.id)}
-                      isSelected={false}
-
-                      onSelect={onSelectWinery}
-                      onTagClick={onTagFilterChange}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+                ))}
+              </div>
+            </>
           </div>
         </div>
       )}
