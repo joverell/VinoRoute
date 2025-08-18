@@ -104,7 +104,8 @@ export default function HomePage() {
         setAllLocations(locationsData);
 
         const regionsResponse = await fetch('/api/regions');
-        const regionsData: Region[] = await regionsResponse.json();
+        const rawRegionsData = await regionsResponse.json();
+        const regionsData: Region[] = Array.isArray(rawRegionsData) ? rawRegionsData : rawRegionsData.regions || [];
         setRegions(regionsData);
 
         const sharedTourId = searchParams.get('tour');
