@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Winery } from "@/types";
 import WineryCard from "./WineryCard";
+import WineryDetail from "./WineryDetail";
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { TripStop, PrepopulatedStop } from './HomePage';
 import { SavedTour } from '@/types';
@@ -134,40 +135,13 @@ export default function Sidebar({
   return (
     <div className="w-full sm:w-96 h-full p-4 overflow-y-auto bg-white shadow-lg flex-shrink-0 print:hidden">
       {selectedWinery ? (
-        <div>
-          <button
-            onClick={() => onSelectWinery(null)}
-            className="mb-4 text-sm font-semibold text-teal-600 hover:text-teal-800"
-          >
-            &larr; Back to List
-          </button>
-          <h2 className="text-2xl font-bold">{selectedWinery.name}</h2>
-          <div className="flex flex-wrap gap-2 my-2">
-            {selectedWinery.tags.map((tag) => (
-              <span key={tag} className="px-2 py-1 text-xs text-white bg-teal-500 rounded-full">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <p className="mt-4 text-gray-600">
-            Details about opening hours, description, etc., would go here.
-          </p>
-          {tripStops.some(stop => stop.winery.id === selectedWinery.id) ? (
-            <button 
-              onClick={() => onRemoveFromTrip(selectedWinery.id)}
-              className="w-full px-4 py-2 mt-4 font-bold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
-            >
-              Remove from Tour
-            </button>
-          ) : (
-            <button 
-              onClick={() => onAddToTrip(selectedWinery)}
-              className="w-full px-4 py-2 mt-4 font-bold text-white bg-rose-500 rounded-lg hover:bg-rose-600"
-            >
-              Add to My Tour
-            </button>
-          )}
-        </div>
+        <WineryDetail
+          winery={selectedWinery}
+          onClearSelection={() => onSelectWinery(null)}
+          onAddToTrip={onAddToTrip}
+          onRemoveFromTrip={onRemoveFromTrip}
+          isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
+        />
       ) : (
         <>
           <Auth user={user} />
