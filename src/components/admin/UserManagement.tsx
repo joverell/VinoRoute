@@ -29,7 +29,7 @@ const UserManagement = ({ user }: UserManagementProps) => {
       if (!user) return;
       try {
         setLoading(true);
-        const token = await user.getIdToken();
+        const token = await user.getIdToken(true);
         const response = await fetch('/api/users', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -168,13 +168,13 @@ const UserManagement = ({ user }: UserManagementProps) => {
                 <td className="py-2 px-4 border-b">
                   {editingUserId === u.uid ? (
                     <>
-                      <button onClick={() => handleUpdate(u.uid)} className="text-sm text-green-500 hover:underline">Save</button>
-                      <button onClick={() => { setEditingUserId(null); setEditedUser(null); }} className="text-sm text-gray-500 hover:underline ml-2">Cancel</button>
+                      <button onClick={() => handleUpdate(u.uid)} className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600">Save</button>
+                      <button onClick={() => { setEditingUserId(null); setEditedUser(null); }} className="px-3 py-1 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600 ml-2">Cancel</button>
                     </>
                   ) : (
                     <>
-                      <button onClick={() => handleEdit(u)} className="text-sm text-blue-500 hover:underline">Edit</button>
-                      <button onClick={() => handleDelete(u.uid)} className="text-sm text-red-500 hover:underline ml-2">Delete</button>
+                      <button onClick={() => handleEdit(u)} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
+                      <button onClick={() => handleDelete(u.uid)} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600 ml-2">Delete</button>
                     </>
                   )}
                 </td>

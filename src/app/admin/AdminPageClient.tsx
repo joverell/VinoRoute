@@ -24,7 +24,6 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [region, setRegion] = useState('');
   const [type, setType] = useState<'winery' | 'distillery'>('winery');
   const [tags, setTags] = useState('');
-  const [visitDuration, setVisitDuration] = useState(60);
 
   // Form state for region
   const [regionName, setRegionName] = useState('');
@@ -124,7 +123,6 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
       setName('');
       setAddress('');
       setTags('');
-      setVisitDuration(60);
       setCoords(null);
       // Refresh locations
       await fetchData();
@@ -148,7 +146,6 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         region,
         type,
         tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-        visitDuration,
         openingHours: { // Default opening hours
             "0": { open: 10, close: 17 }, "1": { open: 10, close: 17 }, "2": { open: 10, close: 17 },
             "3": { open: 10, close: 17 }, "4": { open: 10, close: 17 }, "5": { open: 10, close: 17 },
@@ -394,7 +391,6 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                         <option value="distillery">Distillery</option>
                       </select>
                       <input type="text" placeholder="Tags (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                      <input type="number" placeholder="Visit Duration (mins)" value={visitDuration} onChange={e => setVisitDuration(parseInt(e.target.value))} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
                       <button type="submit" disabled={isSubmitting || !isLoaded} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
                         {isSubmitting ? 'Adding...' : 'Add Winery'}
                       </button>
@@ -424,8 +420,8 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                         <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleRegion(r.name)}>
                           <h3 className="text-xl font-semibold text-coral-500">{r.name}</h3>
                           <div className="space-x-2 flex items-center">
-                            <button onClick={(e) => { e.stopPropagation(); setEditingRegion({ ...r }) }} className="text-sm text-blue-500 hover:underline">Edit</button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r) }} className="text-sm text-red-500 hover:underline">Delete</button>
+                            <button onClick={(e) => { e.stopPropagation(); setEditingRegion({ ...r }) }} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
+                            <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r) }} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
                             <span>{expandedRegions[r.name] ? '▲' : '▼'}</span>
                           </div>
                         </div>
@@ -435,9 +431,9 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                               <li key={loc.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
                                 <span>{loc.name}</span>
                                 <div className="space-x-4 flex items-center">
-                                  <button onClick={() => setSelectedLocationForWines({ ...loc })} className="text-sm text-green-500 hover:underline">Manage Wines</button>
-                                  <button onClick={() => setEditingLocation({ ...loc })} className="text-sm text-blue-500 hover:underline">Edit</button>
-                                  <button onClick={() => handleDeleteLocation(loc)} className="text-sm text-red-500 hover:underline">Delete</button>
+                                  <button onClick={() => setSelectedLocationForWines({ ...loc })} className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600">Manage Wines</button>
+                                  <button onClick={() => setEditingLocation({ ...loc })} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
+                                  <button onClick={() => handleDeleteLocation(loc)} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
                                 </div>
                               </li>
                             ))}
@@ -526,7 +522,6 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                       <option value="distillery">Distillery</option>
                     </select>
                     <input type="text" placeholder="Tags (comma-separated)" value={editingLocation.tags.join(', ')} onChange={e => setEditingLocation({...editingLocation, tags: e.target.value.split(',').map(t=>t.trim())})} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
-                    <input type="number" placeholder="Visit Duration (mins)" value={editingLocation.visitDuration} onChange={e => setEditingLocation({...editingLocation, visitDuration: parseInt(e.target.value)})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
                     <div className="flex justify-end space-x-4 pt-4">
                       <button type="button" onClick={() => setEditingLocation(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
                       <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-coral-500 text-white font-bold rounded-md hover:bg-coral-600 disabled:bg-gray-400">

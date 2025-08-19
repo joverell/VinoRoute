@@ -122,13 +122,13 @@ const RatingsManagement = ({ user }: RatingsManagementProps) => {
             <div className="mt-2 space-x-2">
               {editingRatingId === rating.id ? (
                 <>
-                  <button onClick={() => handleUpdate(rating.id)} className="text-sm text-green-500 hover:underline">Save</button>
-                  <button onClick={() => setEditingRatingId(null)} className="text-sm text-gray-500 hover:underline">Cancel</button>
+                  <button onClick={() => handleUpdate(rating.id)} className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600">Save</button>
+                  <button onClick={() => setEditingRatingId(null)} className="px-3 py-1 text-sm bg-gray-500 text-white rounded-md hover:bg-gray-600">Cancel</button>
                 </>
               ) : (
                 <>
-                  <button onClick={() => handleEdit(rating)} className="text-sm text-blue-500 hover:underline">Edit</button>
-                  <button onClick={() => handleDelete(rating.id)} className="text-sm text-red-500 hover:underline">Delete</button>
+                  <button onClick={() => handleEdit(rating)} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
+                  <button onClick={() => handleDelete(rating.id)} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
                 </>
               )}
             </div>

@@ -30,7 +30,6 @@ export interface Winery {
   type: 'winery' | 'distillery' | 'custom';
   region: string;
   openingHours: { [key: number]: { open: number; close: number } | null };
-  visitDuration: number;
   address?: string;
   state?: string;
   url?: string;
