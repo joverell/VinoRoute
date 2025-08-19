@@ -21,7 +21,7 @@ async function auth(request: Request) {
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string, lwin: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string, lwin: string }> }) {
     const authError = await auth(request);
     if (authError) return authError;
 
@@ -30,8 +30,10 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
 
+    const { id, lwin } = await params;
+
     try {
-        const locationRef = adminDb.collection('locations').doc(params.id);
+        const locationRef = adminDb.collection('locations').doc(id);
         const locationDoc = await locationRef.get();
 
         if (!locationDoc.exists) {
@@ -41,7 +43,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         const locationData = locationDoc.data();
         const wines: Wine[] = locationData?.wines || [];
 
-        const wineToDelete = wines.find(wine => wine.lwin === params.lwin);
+        const wineToDelete = wines.find(wine => wine.lwin === lwin);
 
         if (!wineToDelete) {
             return NextResponse.json({ error: 'Wine not found' }, { status: 404 });
@@ -53,7 +55,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
         return NextResponse.json({ success: true, message: 'Wine deleted successfully' });
     } catch (error) {
-        console.error(`Error deleting wine ${params.lwin} from location ${params.id}:`, error);
+        console.error(`Error deleting wine ${lwin} from location ${id}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

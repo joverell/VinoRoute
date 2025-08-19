@@ -21,7 +21,7 @@ async function auth(request: Request) {
     }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const authError = await auth(request);
     if (authError) return authError;
 
@@ -30,18 +30,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
         return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
 
+    const { id } = await params;
     try {
         const wineData: Omit<Wine, 'lwin'> = await request.json();
         const wineWithLwin: Wine = { ...wineData, lwin: `new-${Date.now()}` };
 
-        const locationRef = adminDb.collection('locations').doc(params.id);
+        const locationRef = adminDb.collection('locations').doc(id);
         await locationRef.update({
             wines: FieldValue.arrayUnion(wineWithLwin)
         });
 
         return NextResponse.json({ success: true, message: 'Wine added successfully', wine: wineWithLwin });
     } catch (error) {
-        console.error(`Error adding wine to location ${params.id}:`, error);
+        console.error(`Error adding wine to location ${id}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

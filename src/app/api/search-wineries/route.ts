@@ -41,6 +41,11 @@ export async function GET(request: Request) {
   }
 
   try {
+    if (!process.env.GOOGLE_MAPS_API_KEY) {
+      console.error('Error: GOOGLE_MAPS_API_KEY environment variable is not set.');
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+
     // 1. Fetch existing wineries from Firestore
     const locationsCollection = adminDb.collection('locations');
     const snapshot = await locationsCollection.where('region', '==', region).get();
