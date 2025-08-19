@@ -58,6 +58,8 @@ export async function GET(request: Request) {
       params: {
         query: `wineries in ${region}`,
         location: { lat: parseFloat(lat), lng: parseFloat(lng) },
+        radius: 50000, // 50km radius, adjust as needed
+        type: 'establishment',
         key: process.env.GOOGLE_MAPS_API_KEY as string,
       },
       timeout: 5000, // milliseconds
