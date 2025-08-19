@@ -4,47 +4,48 @@ import { Client, Place, TextSearchRequest } from '@googlemaps/google-maps-servic
 import { Winery } from '@/types';
 
 export async function GET(request: Request) {
-  const { adminDb, adminAuth } = initializeFirebaseAdmin();
-
   try {
+    // --- Initialization and Authentication ---
+    const { adminDb, adminAuth } = initializeFirebaseAdmin();
+
     if (!adminDb || !adminAuth) {
-      throw new Error('Firebase admin not initialized');
+      console.error('Firebase admin initialization failed.');
+      return NextResponse.json({ error: 'Firebase admin initialization failed.' }, { status: 500 });
     }
 
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized: Missing or invalid Authorization header.' }, { status: 401 });
     }
 
     const token = authorization.split('Bearer ')[1];
-    const decodedToken = await adminAuth.verifyIdToken(token);
-
-    if (!decodedToken.admin) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    try {
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      if (!decodedToken.admin) {
+        return NextResponse.json({ error: 'Forbidden: User is not an admin.' }, { status: 403 });
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      return NextResponse.json({ error: 'Unauthorized: Invalid token.' }, { status: 401 });
     }
-  } catch (error) {
-    console.error('Auth error:', error);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
-  const url = new URL(request.url);
-  const region = url.searchParams.get('region');
-  const lat = url.searchParams.get('lat');
-  const lng = url.searchParams.get('lng');
+    // --- Parameter Validation ---
+    const url = new URL(request.url);
+    const region = url.searchParams.get('region');
+    const lat = url.searchParams.get('lat');
+    const lng = url.searchParams.get('lng');
 
-  if (!region || !lat || !lng) {
-    return NextResponse.json({ error: 'Missing region, lat, or lng parameter' }, { status: 400 });
-  }
-
-  if (!adminDb) {
-    return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
-  }
-
-  try {
-    if (!process.env.GOOGLE_MAPS_API_KEY) {
-      console.error('Error: GOOGLE_MAPS_API_KEY environment variable is not set.');
-      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    if (!region || !lat || !lng) {
+      return NextResponse.json({ error: 'Missing required query parameters: region, lat, or lng.' }, { status: 400 });
     }
+
+    if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+      const errorMessage = 'The NEXT_PUBLIC_GOOGLE_MAPS_API_KEY environment variable is not set on the server.';
+      console.error(`Error: ${errorMessage}`);
+      return NextResponse.json({ error: errorMessage }, { status: 500 });
+    }
+
+    // --- Main Logic ---
 
     // 1. Fetch existing wineries from Firestore
     const locationsCollection = adminDb.collection('locations');
@@ -58,11 +59,11 @@ export async function GET(request: Request) {
       params: {
         query: `wineries in ${region}`,
         location: { lat: parseFloat(lat), lng: parseFloat(lng) },
-        radius: 50000, // 50km radius, adjust as needed
+        radius: 50000, // 50km radius
         type: 'establishment',
-        key: process.env.GOOGLE_MAPS_API_KEY as string,
+        key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
       },
-      timeout: 5000, // milliseconds
+      timeout: 5000,
     };
 
     let searchResult;
@@ -70,12 +71,13 @@ export async function GET(request: Request) {
       searchResult = await googleMapsClient.textSearch(searchRequest);
     } catch (error: any) {
       console.error('Google Maps API error:', error);
-      // Check for a specific error message from the Google Maps client
-      if (error.response && error.response.data && error.response.data.error_message) {
-        return NextResponse.json({ error: `Google Maps API error: ${error.response.data.error_message}` }, { status: 500 });
+      let errorMessage = 'An unknown error occurred while calling Google Maps API.';
+      if (error.response) {
+        errorMessage = `Google Maps API returned error: ${error.response.data?.error_message || JSON.stringify(error.response.data)}`;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
-      // Fallback for other types of errors
-      return NextResponse.json({ error: 'Error calling Google Maps API' }, { status: 500 });
+      return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 
     const potentialWineries = searchResult.data.results;
@@ -83,7 +85,6 @@ export async function GET(request: Request) {
     // 3. Compare and filter
     const newWineries = potentialWineries.filter(place => {
       if (!place.name) return false;
-      // Check if the winery name is already in our database (case-insensitive)
       return !existingWineryNames.has(place.name.toLowerCase());
     });
 
@@ -99,8 +100,16 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json(formattedNewWineries);
-  } catch (error) {
-    console.error('Error searching for wineries:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+
+  } catch (error: any) {
+    console.error('[search-wineries] A critical, unhandled error occurred:', error);
+    return NextResponse.json(
+      {
+        error: 'A critical server error occurred.',
+        details: error.message,
+        stack: error.stack
+      },
+      { status: 500 }
+    );
   }
 }
