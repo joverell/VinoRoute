@@ -65,7 +65,19 @@ export async function GET(request: Request) {
       timeout: 5000, // milliseconds
     };
 
-    const searchResult = await googleMapsClient.textSearch(searchRequest);
+    let searchResult;
+    try {
+      searchResult = await googleMapsClient.textSearch(searchRequest);
+    } catch (error: any) {
+      console.error('Google Maps API error:', error);
+      // Check for a specific error message from the Google Maps client
+      if (error.response && error.response.data && error.response.data.error_message) {
+        return NextResponse.json({ error: `Google Maps API error: ${error.response.data.error_message}` }, { status: 500 });
+      }
+      // Fallback for other types of errors
+      return NextResponse.json({ error: 'Error calling Google Maps API' }, { status: 500 });
+    }
+
     const potentialWineries = searchResult.data.results;
 
     // 3. Compare and filter
