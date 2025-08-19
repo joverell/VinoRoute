@@ -32,7 +32,7 @@ export default function WinerySearch({ regions, onAddWinery, user }: WinerySearc
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/search-wineries?region=${encodeURIComponent(selectedRegion.name)}&lat=${selectedRegion.lat}&lng=${selectedRegion.lng}`, {
+      const response = await fetch(`/api/search-wineries?region=${encodeURIComponent(selectedRegion.name)}&lat=${selectedRegion.center.lat}&lng=${selectedRegion.center.lng}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

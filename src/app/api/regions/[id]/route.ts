@@ -20,25 +20,26 @@ async function auth(request: Request) {
     }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { adminDb } = initializeFirebaseAdmin();
     if (!adminDb) {
         return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
 
+    const { id } = await params;
     try {
-        const doc = await adminDb.collection('regions').doc(params.id).get();
+        const doc = await adminDb.collection('regions').doc(id).get();
         if (!doc.exists) {
             return NextResponse.json({ error: 'Region not found' }, { status: 404 });
         }
         return NextResponse.json(doc.data() as Region);
     } catch (error) {
-        console.error(`Error fetching region ${params.id}:`, error);
+        console.error(`Error fetching region ${id}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const authError = await auth(request);
     if (authError) return authError;
 
@@ -47,18 +48,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
 
+    const { id } = await params;
     try {
         const regionData: Partial<Region> = await request.json();
-        const docRef = adminDb.collection('regions').doc(params.id);
+        const docRef = adminDb.collection('regions').doc(id);
         await docRef.update(regionData);
-        return NextResponse.json({ success: true, message: `Region ${params.id} updated successfully` });
+        return NextResponse.json({ success: true, message: `Region ${id} updated successfully` });
     } catch (error) {
-        console.error(`Error updating region ${params.id}:`, error);
+        console.error(`Error updating region ${id}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const authError = await auth(request);
     if (authError) return authError;
 
@@ -67,11 +69,12 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
         return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
 
+    const { id } = await params;
     try {
-        await adminDb.collection('regions').doc(params.id).delete();
-        return NextResponse.json({ success: true, message: `Region ${params.id} deleted successfully` });
+        await adminDb.collection('regions').doc(id).delete();
+        return NextResponse.json({ success: true, message: `Region ${id} deleted successfully` });
     } catch (error) {
-        console.error(`Error deleting region ${params.id}:`, error);
+        console.error(`Error deleting region ${id}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
