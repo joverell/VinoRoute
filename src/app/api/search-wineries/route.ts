@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const token = authorization.split('Bearer ')[1];
     const decodedToken = await adminAuth.verifyIdToken(token);
 
-    if (!decodedToken.isAdmin) {
+    if (!decodedToken.admin) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
   } catch (error) {

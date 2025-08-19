@@ -30,7 +30,7 @@ if (missingArgs.length > 0) {
     process.exit(1);
 }
 
-const { name, lat, lng, region, type, tags, visitDuration } = wineryData;
+const { name, lat, lng, region, type, tags } = wineryData;
 const coords = { lat: parseFloat(lat), lng: parseFloat(lng) };
 const finalWineryData = {
     name,
@@ -38,7 +38,6 @@ const finalWineryData = {
     region,
     type,
     tags: tags ? tags.split(',') : [],
-    visitDuration: visitDuration ? parseInt(visitDuration) : 60,
     openingHours: { // Default opening hours
         "0": { open: 10, close: 17 }, "1": { open: 10, close: 17 }, "2": { open: 10, close: 17 },
         "3": { open: 10, close: 17 }, "4": { open: 10, close: 17 }, "5": { open: 10, close: 17 },

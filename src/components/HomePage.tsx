@@ -231,7 +231,6 @@ export default function HomePage() {
       type: 'custom',
       region: selectedRegion.name,
       openingHours: {},
-      visitDuration: defaultDuration,
     };
     const newStop: TripStop = { winery: customWinery, duration: defaultDuration };
     setTripStops(currentStops => [...currentStops, newStop]);
@@ -250,7 +249,6 @@ export default function HomePage() {
           type: 'custom',
           region: selectedRegion.name,
           openingHours: {},
-          visitDuration: duration,
           address: address,
         };
         const newStop: TripStop = { winery: customWinery, duration: duration };
