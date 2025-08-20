@@ -5,6 +5,7 @@ import { Region, Winery, Wine } from '@/types';
 import { User } from 'firebase/auth';
 import WinerySearch from '@/components/WinerySearch';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';
+import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
 import RatingsManagement from '@/components/admin/RatingsManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import WinesManagement from '@/components/admin/WinesManagement';
@@ -12,6 +13,70 @@ import WinesManagement from '@/components/admin/WinesManagement';
 interface AdminPageClientProps {
   user: User | null;
 }
+
+const PlacesAutocomplete = ({ onAddressSelect }: { onAddressSelect: (address: string, lat: number, lng: number) => void }) => {
+  const {
+    ready,
+    value,
+    suggestions: { status, data },
+    setValue,
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: {
+      componentRestrictions: { country: 'au' },
+    },
+    debounce: 300,
+  });
+
+  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(e.target.value);
+  };
+
+  const handleSelect = ({ description }: { description: string }) => () => {
+    setValue(description, false);
+    clearSuggestions();
+
+    getGeocode({ address: description })
+      .then((results) => getLatLng(results[0]))
+      .then(({ lat, lng }) => {
+        onAddressSelect(description, lat, lng);
+      })
+      .catch((error) => {
+        console.log('😱 Error: ', error);
+      });
+  };
+
+  const renderSuggestions = () =>
+    data.map((suggestion) => {
+      const {
+        place_id,
+        structured_formatting: { main_text, secondary_text },
+      } = suggestion;
+
+      return (
+        <li
+          key={place_id}
+          onClick={handleSelect(suggestion)}
+          className="p-2 cursor-pointer hover:bg-gray-100"
+        >
+          <strong>{main_text}</strong> <small>{secondary_text}</small>
+        </li>
+      );
+    });
+
+  return (
+    <div className="relative">
+      <input
+        value={value}
+        onChange={handleInput}
+        disabled={!ready}
+        placeholder="Address"
+        className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+      />
+      {status === 'OK' && <ul className="absolute z-10 w-full bg-white border rounded-md mt-1">{renderSuggestions()}</ul>}
+    </div>
+  );
+};
 
 export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [regions, setRegions] = useState<Region[]>([]);
@@ -386,7 +451,12 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     <h2 className="text-2xl font-semibold mb-4">Add Winery</h2>
                     <form onSubmit={handleAddWinery} className="space-y-4">
                       <input type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                      <input type="text" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <PlacesAutocomplete
+                        onAddressSelect={(selectedAddress, lat, lng) => {
+                          setAddress(selectedAddress);
+                          setCoords({ lat, lng });
+                        }}
+                      />
                       <select value={region} onChange={e => setRegion(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
                         {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
                       </select>

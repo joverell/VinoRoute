@@ -20,13 +20,14 @@ export async function GET(request: Request) {
     }
 
     const locationsSnapshot = await adminDb.collection('locations').get();
-    const allWines: any[] = [];
+    const allWines: Wine[] = [];
 
     for (const locationDoc of locationsSnapshot.docs) {
       const winesSnapshot = await locationDoc.ref.collection('wines').get();
       winesSnapshot.forEach(wineDoc => {
         allWines.push({
-          ...wineDoc.data(),
+          ...(wineDoc.data() as Wine),
+          lwin: wineDoc.id,
           locationId: locationDoc.id,
           locationName: locationDoc.data().name,
         });

@@ -47,11 +47,9 @@ export async function GET(request: Request) {
 
     // --- Main Logic ---
 
-    // 1. Fetch existing wineries from Firestore
-    const locationsCollection = adminDb.collection('locations');
-    const snapshot = await locationsCollection.where('region', '==', region).get();
-    const existingWineries = snapshot.docs.map(doc => doc.data() as Winery);
-    const existingWineryNames = new Set(existingWineries.map(w => w.name.toLowerCase()));
+    // 1. Fetch all existing winery names from Firestore to prevent duplicates
+    const allLocationsSnapshot = await adminDb.collection('locations').get();
+    const existingWineryNames = new Set(allLocationsSnapshot.docs.map(doc => doc.data().name.toLowerCase()));
 
     // 2. Search for wineries using Google Maps Places API
     const googleMapsClient = new Client({});
@@ -69,12 +67,10 @@ export async function GET(request: Request) {
     let searchResult;
     try {
       searchResult = await googleMapsClient.textSearch(searchRequest);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Google Maps API error:', error);
       let errorMessage = 'An unknown error occurred while calling Google Maps API.';
-      if (error.response) {
-        errorMessage = `Google Maps API returned error: ${error.response.data?.error_message || JSON.stringify(error.response.data)}`;
-      } else if (error.message) {
+      if (error instanceof Error) {
         errorMessage = error.message;
       }
       return NextResponse.json({ error: errorMessage }, { status: 500 });
@@ -101,13 +97,15 @@ export async function GET(request: Request) {
 
     return NextResponse.json(formattedNewWineries);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[search-wineries] A critical, unhandled error occurred:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    const stack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json(
       {
         error: 'A critical server error occurred.',
-        details: error.message,
-        stack: error.stack
+        details: errorMessage,
+        stack: stack
       },
       { status: 500 }
     );

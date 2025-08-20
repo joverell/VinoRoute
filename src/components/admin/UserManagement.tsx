@@ -9,7 +9,7 @@ interface User {
   displayName?: string;
   disabled: boolean;
   customClaims?: {
-    [key: string]: any;
+    admin?: boolean;
   };
 }
 

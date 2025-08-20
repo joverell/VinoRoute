@@ -407,7 +407,7 @@ export default function HomePage() {
   }
 
   return (
-    <>
+    <div className="flex flex-col w-screen h-screen">
       <Banner
         user={user}
         showRegionOverlay={showRegionOverlay}
@@ -415,7 +415,7 @@ export default function HomePage() {
         includeDistilleries={includeDistilleries}
         onToggleDistilleries={() => setIncludeDistilleries(!includeDistilleries)}
       />
-      <main className="flex w-screen h-screen print:hidden">
+      <main className="flex flex-grow print:hidden overflow-hidden">
         <Sidebar
           user={user}
           onSaveTour={handleSaveTour}
@@ -475,6 +475,6 @@ export default function HomePage() {
         )}
       </main>
       <PrintableItinerary itinerary={itinerary} startTime={startTime} />
-    </>
+    </div>
   );
 }
