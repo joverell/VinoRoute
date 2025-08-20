@@ -30,11 +30,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   return (
     <div>
-      <Banner
-        user={user}
-        showRegionOverlay={false}
-        onToggleRegionOverlay={dummyToggle}
-      />
+      <Banner user={user} showMapOptions={false} />
       <div className="p-4">
         <Link href="/" className="text-blue-500 hover:underline mb-4 block">&larr; Back to Main Page</Link>
         {children(user)}
