@@ -186,7 +186,7 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
             </div>
           </div>
           <div className="mt-4 space-x-2">
-            <button type="submit" className="px-4 py-2 bg-coral-500 text-white font-bold rounded-md hover:bg-coral-600">
+            <button type="submit" className="px-4 py-2 bg-[#FF5757] text-white font-bold rounded-md hover:bg-[#E04A4A]">
               {isEditing ? 'Update' : 'Add'}
             </button>
             <button type="button" onClick={cancelForm} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
