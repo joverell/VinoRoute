@@ -156,46 +156,36 @@ export default function Sidebar({
           <div className="p-4 mb-4 border rounded-lg">
             <h2 className="text-xl font-bold text-gray-800">Plan Your Tour</h2>
             <div className="my-4">
-              <label htmlFor="region" className="block text-sm font-medium text-gray-700">Region</label>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label htmlFor="region" className="block text-sm font-medium text-gray-700">Region</label>
-                  <select
-                    id="region" name="region"
-                    value={selectValue}
-                    onChange={(e) => onRegionSelection(e.target.value)}
-                    className="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm"
-                  >
-                    <option value="Australia">All of Australia</option>
-                    {Object.entries(groupedRegions).map(([state, stateRegions]) => (
-                      <optgroup key={state} label={state}>
-                        <option value={`state-${state}`}>{`All of ${state}`}</option>
-                        {stateRegions.map(r => <option key={r.name} value={r.name}>{r.name.replace(/, (VIC|SA|WA|NSW|TAS|QLD|ACT)$/, '')}</option>)}
-                      </optgroup>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
-                  <div className="mt-2 space-y-2">
-                    {locationTypes.map(lt => (
-
-                      <div key={lt.id} className="flex items-center">
-                        <input
-                          id={`location-type-${lt.id}`}
-                          name="location-type"
-                          type="checkbox"
-                          value={lt.id}
-                          checked={locationTypeFilters.includes(lt.id)}
-                          onChange={() => onLocationTypeChange(lt.id)}
-                          className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                        />
-                        <label htmlFor={`location-type-${lt.id}`} className="ml-3 text-sm text-gray-700">
-                          {lt.plural}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+              <select
+                id="region" name="region"
+                value={selectValue}
+                onChange={(e) => onRegionSelection(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
+              >
+                <option value="Australia">All of Australia</option>
+                {Object.entries(groupedRegions).map(([state, stateRegions]) => (
+                  <optgroup key={state} label={state}>
+                    <option value={`state-${state}`}>{`All of ${state}`}</option>
+                    {stateRegions.map(r => <option key={r.name} value={r.name}>{r.name.replace(/, (VIC|SA|WA|NSW|TAS|QLD|ACT)$/, '')}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+              <div className="mt-4">
+                <span className="text-sm font-medium text-gray-700">Filter by Type</span>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {locationTypes.map(lt => (
+                    <button
+                      key={lt.id}
+                      onClick={() => onLocationTypeChange(lt.id)}
+                      className={`px-3 py-1 text-sm rounded-full ${
+                        locationTypeFilters.includes(lt.id)
+                          ? 'bg-rose-500 text-white hover:bg-rose-600'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {lt.plural}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
