@@ -51,7 +51,7 @@ export default function WineryCard({ winery, onAddToTrip, onRemoveFromTrip, isIn
           </div>
         )}
         <div className="flex flex-wrap gap-2 mt-2">
-          {winery.tags.map((tag) => (
+          {winery.tags?.map((tag) => (
             <button
               key={tag}
               onClick={(e) => handleTagClick(e, tag)}
