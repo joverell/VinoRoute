@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { UserRecord } from 'firebase-admin/auth';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { adminDb, adminAuth } = initializeFirebaseAdmin();
     if (!adminDb || !adminAuth) {
         return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
     }
 
-    try {
-        const { id: wineryId } = params;
+    const { id: wineryId } = await params;
 
+    try {
         // Fetch ratings for the given winery
         const ratingsSnapshot = await adminDb.collection('ratings')
             .where('wineryId', '==', wineryId)
@@ -39,20 +39,23 @@ export async function GET(request: Request, { params }: { params: { id: string }
             const wineryRef = adminDb.collection('locations').doc(wineryId);
             const wineryDoc = await wineryRef.get();
             if (wineryDoc.exists) {
-                winery = wineryDoc.data();
+                const wineryData = wineryDoc.data();
+                if (wineryData) {
+                    winery = { id: wineryDoc.id, name: wineryData.name || 'Unknown Winery' };
+                }
             }
 
             return {
                 id: doc.id,
                 ...ratingData,
                 user: user ? { uid: user.uid, displayName: user.displayName || 'Anonymous' } : null,
-                winery: winery ? { id: wineryDoc.id, name: winery.name } : null,
+                winery: winery,
             };
         }));
 
         return NextResponse.json(ratings);
     } catch (error) {
-        console.error(`Error fetching ratings for winery ${params.id}:`, error);
+        console.error(`Error fetching ratings for winery ${wineryId}:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

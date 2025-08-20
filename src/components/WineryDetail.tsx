@@ -1,9 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User } from 'firebase/auth';
-import { Winery, Rating } from "@/types";
+import { Winery } from "@/types";
 import { formatAddress } from '@/utils/formatAddress';
 
-interface PopulatedRating extends Rating {
+interface PopulatedRating {
+  id: string;
+  wineryId: string | number;
+  userId: string;
+  rating: number;
+  comment?: string;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
   user: {
     uid: string;
     displayName: string;
@@ -44,7 +53,7 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ratings, setRatings] = useState<PopulatedRating[]>([]);
 
-  const fetchRatings = async () => {
+  const fetchRatings = useCallback(async () => {
     try {
       const response = await fetch(`/api/wineries/${winery.id}/ratings`);
       if (response.ok) {
@@ -54,13 +63,13 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
     } catch (error) {
       console.error('Error fetching ratings:', error);
     }
-  };
+  }, [winery.id]);
 
   useEffect(() => {
     if (winery.id) {
       fetchRatings();
     }
-  }, [winery.id]);
+  }, [winery.id, fetchRatings]);
 
   const handleRatingSubmit = async () => {
     if (!user) {

@@ -46,7 +46,8 @@ export async function GET(request: Request) {
                 try {
                     const userRecord = await adminAuth.getUser(ratingData.userId);
                     user = { uid: userRecord.uid, displayName: userRecord.displayName || 'Anonymous' };
-                } catch (e) {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (_e) {
                     console.warn(`Could not fetch user ${ratingData.userId}`);
                 }
             }
@@ -57,7 +58,8 @@ export async function GET(request: Request) {
                     if (wineryDoc.exists) {
                         winery = { id: wineryDoc.id, name: wineryDoc.data()?.name || 'Unknown Winery' };
                     }
-                } catch (e) {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (_e) {
                     console.warn(`Could not fetch winery ${ratingData.wineryId}`);
                 }
             }
