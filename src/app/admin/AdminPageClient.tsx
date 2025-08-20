@@ -369,7 +369,8 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         setToast({ message: `Region "${editingRegion.name}" updated.`, type: 'success' });
         setEditingRegion(null);
         fetchData();
-    } catch (err)        if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
+    } catch (err) {
+        if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
         else setToast({ message: 'An unknown error occurred.', type: 'error' });
     } finally {
         setIsSubmitting(false);
