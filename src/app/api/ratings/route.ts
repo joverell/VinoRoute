@@ -64,9 +64,12 @@ export async function GET(request: Request) {
                 }
             }
 
+            const { createdAt, ...otherData } = ratingData;
+
             return {
                 id: doc.id,
-                ...ratingData,
+                ...otherData,
+                createdAt: createdAt.toDate().toISOString(),
                 user,
                 winery,
             };
