@@ -27,6 +27,7 @@ export interface LocationType {
   id: string;
   singular: string;
   plural: string;
+  icon?: string;
 }
 
 // The Winery and Region interfaces remain the same
