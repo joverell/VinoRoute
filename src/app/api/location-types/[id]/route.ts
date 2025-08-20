@@ -25,9 +25,9 @@ export async function PUT(
     const locationTypeData: Partial<Omit<LocationType, "id">> =
       await request.json();
 
-    if (!locationTypeData.name && !locationTypeData.mapImageUrl) {
+    if (!locationTypeData.singular && !locationTypeData.plural) {
       return NextResponse.json(
-        { error: "Invalid request body" },
+        { error: "Invalid request body: at least one of 'singular' or 'plural' must be provided" },
         { status: 400 },
       );
     }

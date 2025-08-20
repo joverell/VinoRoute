@@ -25,8 +25,8 @@ export interface Rating {
 
 export interface LocationType {
   id: string;
-  name: string;
-  mapImageUrl: string;
+  singular: string;
+  plural: string;
 }
 
 // The Winery and Region interfaces remain the same

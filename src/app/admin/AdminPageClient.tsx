@@ -506,7 +506,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                       </select>
                       <select value={locationTypeId} onChange={e => setLocationTypeId(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
                         <option value="" disabled>Select Location Type</option>
-                        {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.name}</option>)}
+                        {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.singular}</option>)}
                       </select>
                       <input type="text" placeholder="Tags (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
                       <button type="submit" disabled={isSubmitting || !isLoaded} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
@@ -671,7 +671,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     </select>
                     <select value={editingLocation.locationTypeId} onChange={e => setEditingLocation({...editingLocation, locationTypeId: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
                       <option value="" disabled>Select Location Type</option>
-                      {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.name}</option>)}
+                      {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.singular}</option>)}
                     </select>
                     <input type="text" placeholder="Tags (comma-separated)" value={editingLocation.tags.join(', ')} onChange={e => setEditingLocation({...editingLocation, tags: e.target.value.split(',').map(t=>t.trim())})} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
                     <div className="flex justify-end space-x-4 pt-4">

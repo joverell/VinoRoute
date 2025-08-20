@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     const locationTypeData: Omit<LocationType, 'id'> = await request.json();
 
-    if (!locationTypeData.name || !locationTypeData.mapImageUrl) {
+    if (!locationTypeData.singular || !locationTypeData.plural) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
