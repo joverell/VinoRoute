@@ -63,7 +63,7 @@ interface SidebarProps {
   prepopulatedStop: PrepopulatedStop | null;
   onClearPrepopulatedStop: () => void;
   filterMode: 'region' | 'state' | 'country';
-  locationTypeFilter: string;
+  locationTypeFilters: string[];
   onLocationTypeChange: (type: string) => void;
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
@@ -79,7 +79,7 @@ export default function Sidebar({
   selectedRegion, onRegionSelection,
   availableWineries, regions, locationTypes, prepopulatedStop, onClearPrepopulatedStop,
   filterMode,
-  locationTypeFilter, onLocationTypeChange,
+  locationTypeFilters, onLocationTypeChange,
   searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
@@ -176,18 +176,26 @@ export default function Sidebar({
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="locationType" className="block text-sm font-medium text-gray-700">Type</label>
-                  <select
-                    id="locationType" name="locationType"
-                    value={locationTypeFilter}
-                    onChange={(e) => onLocationTypeChange(e.target.value)}
-                    className="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm"
-                  >
-                    <option value="all">All Types</option>
+                  <label className="block text-sm font-medium text-gray-700">Type</label>
+                  <div className="mt-2 space-y-2">
                     {locationTypes.map(lt => (
-                      <option key={lt.id} value={lt.id}>{lt.plural}</option>
+
+                      <div key={lt.id} className="flex items-center">
+                        <input
+                          id={`location-type-${lt.id}`}
+                          name="location-type"
+                          type="checkbox"
+                          value={lt.id}
+                          checked={locationTypeFilters.includes(lt.id)}
+                          onChange={() => onLocationTypeChange(lt.id)}
+                          className="w-4 h-4 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                        />
+                        <label htmlFor={`location-type-${lt.id}`} className="ml-3 text-sm text-gray-700">
+                          {lt.name}s
+                        </label>
+                      </div>
                     ))}
-                  </select>
+                  </div>
                 </div>
               </div>
             </div>
