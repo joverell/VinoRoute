@@ -36,7 +36,39 @@ export async function GET(request: Request) {
         }
 
         const ratingsSnapshot = await adminDb.collection('ratings').orderBy('createdAt', 'desc').get();
-        const ratings = ratingsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        const ratings = await Promise.all(ratingsSnapshot.docs.map(async (doc) => {
+            const ratingData = doc.data();
+            let user = null;
+            let winery = null;
+
+            if (ratingData.userId) {
+                try {
+                    const userRecord = await adminAuth.getUser(ratingData.userId);
+                    user = { uid: userRecord.uid, displayName: userRecord.displayName || 'Anonymous' };
+                } catch (e) {
+                    console.warn(`Could not fetch user ${ratingData.userId}`);
+                }
+            }
+
+            if (ratingData.wineryId) {
+                try {
+                    const wineryDoc = await adminDb.collection('locations').doc(ratingData.wineryId).get();
+                    if (wineryDoc.exists) {
+                        winery = { id: wineryDoc.id, name: wineryDoc.data()?.name || 'Unknown Winery' };
+                    }
+                } catch (e) {
+                    console.warn(`Could not fetch winery ${ratingData.wineryId}`);
+                }
+            }
+
+            return {
+                id: doc.id,
+                ...ratingData,
+                user,
+                winery,
+            };
+        }));
 
         return NextResponse.json(ratings);
     } catch (error) {

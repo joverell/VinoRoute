@@ -4,6 +4,21 @@ import { useState, useEffect } from 'react';
 import { Rating } from '@/types';
 import { User } from 'firebase/auth';
 
+const StarRating = ({ rating }: { rating: number }) => {
+  return (
+    <div className="flex items-center">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`text-xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+        >
+          &#9733;
+        </span>
+      ))}
+    </div>
+  );
+};
+
 interface RatingsManagementProps {
   user: User | null;
 }
@@ -106,9 +121,17 @@ const RatingsManagement = ({ user }: RatingsManagementProps) => {
       <div className="space-y-4">
         {ratings.map(rating => (
           <div key={rating.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <p><strong>Winery ID:</strong> {rating.wineryId}</p>
-            <p><strong>User ID:</strong> {rating.userId}</p>
-            <p><strong>Rating:</strong> {rating.rating}</p>
+            <div className="flex justify-between items-start">
+              <div>
+                <p><strong>Winery:</strong> {rating.winery?.name || rating.wineryId}</p>
+                <p><strong>User:</strong> {rating.user?.displayName || rating.userId}</p>
+                <div className="flex items-center">
+                  <strong className="mr-2">Rating:</strong>
+                  <StarRating rating={rating.rating} />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">{new Date(rating.createdAt.seconds * 1000).toLocaleDateString()}</p>
+            </div>
             {editingRatingId === rating.id ? (
               <textarea
                 value={editedComment}
