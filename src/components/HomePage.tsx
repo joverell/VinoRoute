@@ -326,8 +326,8 @@ export default function HomePage() {
       alert("Please login to save your tour.");
       return;
     }
-    if (tripStops.length === 0) {
-      alert("Please add some stops to your tour before saving.");
+    if (tripStops.length === 0 || !itinerary) {
+      alert("Please add some stops and calculate an itinerary before saving.");
       return;
     }
 
@@ -340,12 +340,20 @@ export default function HomePage() {
           tourName: tourName,
           regionName: selectedRegion?.name,
           startTime: startTime,
-          stops: tripStops.map(stop => ({ 
-            wineryId: stop.winery.id, 
+          stops: tripStops.map(stop => ({
+            wineryId: stop.winery.id,
             duration: stop.duration,
             ...(stop.winery.type === 'custom' && { customData: stop.winery })
           })),
           createdAt: new Date(),
+          itinerary: itinerary.map(stop => ({
+            wineryId: stop.winery.id,
+            wineryName: stop.winery.name,
+            arrivalTime: stop.arrivalTime.toISOString(),
+            departureTime: stop.departureTime.toISOString(),
+            travelTimeToNext: stop.travelTimeToNext,
+            warning: stop.warning,
+          })),
         });
         alert("Tour saved successfully!");
       } catch (error) {

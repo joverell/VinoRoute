@@ -60,19 +60,29 @@ export interface RegionBoundary {
 }
 
 // This interface is now more specific to handle the Firestore Timestamp
+export interface SavedItineraryStop {
+  wineryId: string | number;
+  wineryName: string;
+  arrivalTime: string; // Storing as ISO string
+  departureTime: string; // Storing as ISO string
+  travelTimeToNext?: { text: string; value: number };
+  warning?: string;
+}
+
 export interface SavedTour {
   id: string;
   userId: string;
   tourName: string;
   regionName: string;
   startTime: string;
-  stops: { 
-    wineryId: string | number; 
+  stops: {
+    wineryId: string | number;
     duration: number;
-    customData?: Winery; 
+    customData?: Winery;
   }[];
   createdAt: { // This is how Firestore Timestamps are structured
     seconds: number;
     nanoseconds: number;
   };
+  itinerary?: SavedItineraryStop[];
 }

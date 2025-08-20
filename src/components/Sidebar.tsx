@@ -32,6 +32,7 @@ const getNextSaturday10AM = () => {
 const DragHandleIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400"><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="15" cy="6" r="1.5" fill="currentColor"/><circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="18" r="1.5" fill="currentColor"/><circle cx="15" cy="18" r="1.5" fill="currentColor"/></svg> );
 const InfoIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg> );
 const formatTime = (date: Date) => date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' });
+const formatTimeFromString = (isoString: string) => new Date(isoString).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' });
 const formatSavedDate = (timestamp: { seconds: number }) => new Date(timestamp.seconds * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 
 interface SidebarProps {
@@ -355,6 +356,23 @@ export default function Sidebar({
                     <span>{tour.regionName}</span>
                     <span>Saved: {formatSavedDate(tour.createdAt)}</span>
                   </div>
+
+                  {tour.itinerary && tour.itinerary.length > 0 ? (
+                    <div className="mt-2 text-sm text-gray-800">
+                      <p>
+                        <strong>{tour.itinerary.length} stop{tour.itinerary.length > 1 ? 's' : ''}:</strong>{' '}
+                        {formatTimeFromString(tour.itinerary[0].arrivalTime)} -{' '}
+                        {formatTimeFromString(tour.itinerary[tour.itinerary.length - 1].departureTime)}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-sm text-gray-800">
+                      <p>
+                        <strong>{tour.stops.length} stop{tour.stops.length > 1 ? 's' : ''}</strong>
+                      </p>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-3 gap-2 mt-4">
                     <button onClick={() => handleShare(tour.id)} className="w-full px-3 py-1 text-sm font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600">Share</button>
                     <button onClick={() => onLoadTour(tour)} className="w-full px-3 py-1 text-sm font-bold text-white bg-teal-500 rounded-lg hover:bg-teal-600">Load</button>
