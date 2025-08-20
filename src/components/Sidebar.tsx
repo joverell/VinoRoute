@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Winery } from "@/types";
+import { Winery, LocationType } from "@/types";
 import WineryCard from "./WineryCard";
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { TripStop, PrepopulatedStop } from './HomePage';
@@ -292,7 +292,7 @@ export default function Sidebar({
           <div>
             <>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-gray-700">Available Locations</h3>
+                <h3 className="text-lg font-semibold text-gray-700">Available Locations ({availableWineries.length})</h3>
                 <div className="flex items-center gap-4">
                   <button onClick={() => setShowCustomForm(!showCustomForm)} className="px-2 py-1 text-xs font-bold text-teal-700 bg-teal-100 rounded-lg hover:bg-teal-200">
                     {showCustomForm ? 'Cancel' : '+ Custom Stop'}

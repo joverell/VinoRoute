@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import MapComponent from '@/components/Map';
 import Sidebar from '@/components/Sidebar';
 import WineryDetailPanel from '@/components/WineryDetailPanel';
-import { Winery, Region, SavedTour } from '@/types';
+import { Winery, Region, SavedTour, LocationType } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
 import Banner from './Banner';

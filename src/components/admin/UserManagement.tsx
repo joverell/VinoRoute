@@ -124,7 +124,7 @@ const UserManagement = ({ user }: UserManagementProps) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">User Management</h2>
+      <h2 className="text-2xl font-semibold mb-4">User Management ({users.length})</h2>
       <div className="overflow-x-auto">
         <table className="min-w-full bg-white dark:bg-gray-800">
           <thead>

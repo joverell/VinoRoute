@@ -37,7 +37,7 @@ export default function MapComponent(props: MapProps) {
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const getMarkerIcon = (winery: Winery): google.maps.Icon => {
+  const getMarkerIcon = (winery: Winery): google.maps.Icon | google.maps.Symbol => {
     if (winery.locationType && winery.locationType.mapImageUrl) {
       return {
         url: winery.locationType.mapImageUrl,
