@@ -109,6 +109,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [activeTab, setActiveTab] = useState('regions');
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [locationFilter, setLocationFilter] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
@@ -531,45 +532,62 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
 
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                   <h2 className="text-2xl font-semibold mb-4">Regions & Locations</h2>
-                  <div className="mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     <input
                       type="text"
-                      placeholder="Filter locations..."
+                      placeholder="Filter locations by name..."
                       value={locationFilter}
                       onChange={e => setLocationFilter(e.target.value)}
                       className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
                     />
+                    <select
+                      value={regionFilter}
+                      onChange={e => setRegionFilter(e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                    >
+                      <option value="">All Regions</option>
+                      {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
+                    </select>
                   </div>
                   <div className="space-y-6">
-                    {regions.map(r => (
-                      <div key={getRegionDocId(r.name)} className="border-t pt-4">
-                        <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleRegion(r.name)}>
-                          <h3 className="text-xl font-semibold text-coral-500">{r.name} ({locations.filter(loc => loc.region === r.name).length})</h3>
-                          <div className="space-x-2 flex items-center">
-                            <button onClick={(e) => { e.stopPropagation(); setEditingRegion({ ...r }) }} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
-                            <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r) }} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
-                            <span>{expandedRegions[r.name] ? '▲' : '▼'}</span>
+                    {regions.map(r => {
+                      const filteredLocations = locations
+                        .filter(loc => loc.region === r.name)
+                        .filter(loc => loc.name.toLowerCase().includes(locationFilter.toLowerCase()))
+                        .sort((a, b) => a.name.localeCompare(b.name));
+
+                      if (regionFilter && r.name !== regionFilter) return null;
+
+                      return (
+                        <div key={getRegionDocId(r.name)} className="border-t pt-4">
+                          <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleRegion(r.name)}>
+                            <h3 className="text-xl font-semibold text-coral-500">{r.name} ({filteredLocations.length})</h3>
+                            <div className="space-x-2 flex items-center">
+                              <button onClick={(e) => { e.stopPropagation(); setEditingRegion({ ...r }) }} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r) }} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
+                              <span>{expandedRegions[r.name] || (regionFilter === r.name) ? '▲' : '▼'}</span>
+                            </div>
                           </div>
+                          {(expandedRegions[r.name] || (regionFilter === r.name)) && (
+                            <ul className="mt-2 space-y-2">
+                              {filteredLocations.map(loc => (
+                                <li key={loc.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
+                                  <span>{loc.name}</span>
+                                  <div className="space-x-4 flex items-center">
+                                    <button onClick={() => setSelectedLocationForWines({ ...loc })} className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600">Manage Wines</button>
+                                    <button onClick={() => setEditingLocation({ ...loc })} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
+                                    <button onClick={() => handleDeleteLocation(loc)} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
+                                  </div>
+                                </li>
+                              ))}
+                              {filteredLocations.length === 0 && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">No locations found for this region and filter.</p>
+                              )}
+                            </ul>
+                          )}
                         </div>
-                        {expandedRegions[r.name] && (
-                          <ul className="mt-2 space-y-2">
-                            {locations.filter(loc => loc.region === r.name && loc.name.toLowerCase().includes(locationFilter.toLowerCase())).map(loc => (
-                              <li key={loc.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
-                                <span>{loc.name}</span>
-                                <div className="space-x-4 flex items-center">
-                                  <button onClick={() => setSelectedLocationForWines({ ...loc })} className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600">Manage Wines</button>
-                                  <button onClick={() => setEditingLocation({ ...loc })} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
-                                  <button onClick={() => handleDeleteLocation(loc)} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
-                                </div>
-                              </li>
-                            ))}
-                            {locations.filter(loc => loc.region === r.name && loc.name.toLowerCase().includes(locationFilter.toLowerCase())).length === 0 && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400">No locations found.</p>
-                            )}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
                 {selectedLocationForWines && (
