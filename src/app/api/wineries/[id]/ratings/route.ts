@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
-import { DecodedIdToken } from 'firebase-admin/auth';
 import { UserRecord } from 'firebase-admin/auth';
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
@@ -25,7 +24,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         const ratings = await Promise.all(ratingsSnapshot.docs.map(async (doc) => {
             const ratingData = doc.data();
             let user: UserRecord | null = null;
-            let winery: any = null;
+            let winery: { id: string, name: string } | null = null;
 
             // Fetch user data
             if (ratingData.userId) {

@@ -2,6 +2,29 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment Setup
+
+This project uses Firebase for backend services. You'll need to configure your environment variables to connect to your Firebase project.
+
+1.  **Create a `.env.local` file** in the root of the project.
+
+2.  **Add your Firebase service account credentials** to the `.env.local` file. You can generate a private key in your Firebase project settings under **Project settings > Service accounts**.
+
+    Your `.env.local` file should contain the following variables:
+
+    ```
+    # Firebase Admin SDK credentials
+    FIREBASE_PROJECT_ID="your-project-id"
+    FIREBASE_CLIENT_EMAIL="firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com"
+    FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n...your-private-key...\\n-----END PRIVATE KEY-----\\n"
+    ```
+
+    **Important**: The `FIREBASE_PRIVATE_KEY` from the generated JSON file needs to be formatted as a single line with `\n` as newline characters. The `initializeFirebaseAdmin` function in the code will handle the formatting, so you can copy the key as is.
+
+Once your `.env.local` file is configured, you can proceed to run the development server.
+
+### Running the Server
+
 First, run the development server:
 
 ```bash
