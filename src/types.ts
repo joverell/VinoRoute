@@ -17,10 +17,7 @@ export interface Rating {
   userId: string;
   rating: number;
   comment?: string;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
-  };
+  createdAt: string;
   user?: {
     uid: string;
     displayName: string;
