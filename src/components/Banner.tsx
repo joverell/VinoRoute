@@ -8,16 +8,12 @@ interface BannerProps {
   user: User | null;
   showRegionOverlay: boolean;
   onToggleRegionOverlay: () => void;
-  includeDistilleries: boolean;
-  onToggleDistilleries: () => void;
 }
 
 const Banner = ({
   user,
   showRegionOverlay,
   onToggleRegionOverlay,
-  includeDistilleries,
-  onToggleDistilleries,
 }: BannerProps) => {
   return (
     <div className="bg-gray-800 text-white p-4 flex flex-wrap items-center justify-between print:hidden">
@@ -39,16 +35,6 @@ const Banner = ({
                 <input type="checkbox" checked={showRegionOverlay} onChange={onToggleRegionOverlay} className="sr-only" />
                 <div className={`block w-10 h-6 rounded-full transition-colors ${showRegionOverlay ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
                 <div className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${showRegionOverlay ? 'translate-x-4' : ''}`}></div>
-              </div>
-            </label>
-          </div>
-          <div className="flex items-center">
-            <span className="text-sm text-gray-400 mr-2">Distilleries</span>
-            <label className="flex items-center cursor-pointer">
-              <div className="relative">
-                <input type="checkbox" checked={includeDistilleries} onChange={onToggleDistilleries} className="sr-only" />
-                <div className={`block w-10 h-6 rounded-full transition-colors ${includeDistilleries ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
-                <div className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${includeDistilleries ? 'translate-x-4' : ''}`}></div>
               </div>
             </label>
           </div>

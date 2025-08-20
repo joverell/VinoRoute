@@ -9,6 +9,7 @@ import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocom
 import RatingsManagement from '@/components/admin/RatingsManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import WinesManagement from '@/components/admin/WinesManagement';
+import LocationTypeManagement from '@/components/admin/LocationTypeManagement';
 import Toast from '@/components/Toast';
 
 interface AdminPageClientProps {
@@ -82,6 +83,7 @@ const PlacesAutocomplete = ({ onAddressSelect }: { onAddressSelect: (address: st
 export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [regions, setRegions] = useState<Region[]>([]);
   const [locations, setLocations] = useState<Winery[]>([]);
+  const [locationTypes, setLocationTypes] = useState<LocationType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,7 +91,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [region, setRegion] = useState('');
-  const [type, setType] = useState<'winery' | 'distillery'>('winery');
+  const [locationTypeId, setLocationTypeId] = useState('');
   const [tags, setTags] = useState('');
 
   // Form state for region
@@ -173,6 +175,11 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
       const locationsData = await locationsResponse.json();
       setLocations(locationsData);
 
+      const locationTypesResponse = await fetch('/api/location-types');
+      if (!locationTypesResponse.ok) throw new Error('Failed to fetch location types');
+      const locationTypesData = await locationTypesResponse.json();
+      setLocationTypes(locationTypesData);
+
       setError(null);
     } catch (err) {
       if (err instanceof Error) setError(err.message);
@@ -232,7 +239,8 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         address,
         coords: { lat: 0, lng: 0 }, // Placeholder
         region,
-        type,
+        type: 'winery', // for backwards compatibility
+        locationTypeId,
         tags: tags.split(',').map(t => t.trim()).filter(Boolean),
         openingHours: { // Default opening hours
             "0": { open: 10, close: 17 }, "1": { open: 10, close: 17 }, "2": { open: 10, close: 17 },
@@ -469,6 +477,9 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                 <button onClick={() => setActiveTab('wines')} className={`${activeTab === 'wines' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
                   Wines
                 </button>
+                <button onClick={() => setActiveTab('locationTypes')} className={`${activeTab === 'locationTypes' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                  Location Types
+                </button>
               </nav>
             </div>
 
@@ -492,9 +503,9 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                       <select value={region} onChange={e => setRegion(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
                         {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
                       </select>
-                      <select value={type} onChange={e => setType(e.target.value as 'winery' | 'distillery')} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
-                        <option value="winery">Winery</option>
-                        <option value="distillery">Distillery</option>
+                      <select value={locationTypeId} onChange={e => setLocationTypeId(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500">
+                        <option value="" disabled>Select Location Type</option>
+                        {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.name}</option>)}
                       </select>
                       <input type="text" placeholder="Tags (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
                       <button type="submit" disabled={isSubmitting || !isLoaded} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
@@ -604,6 +615,10 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
               <WinesManagement user={user} />
             )}
 
+            {activeTab === 'locationTypes' && (
+              <LocationTypeManagement user={user} />
+            )}
+
             {editingRegion && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
@@ -636,9 +651,9 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     <select value={editingLocation.region} onChange={e => setEditingLocation({...editingLocation, region: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
                       {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
                     </select>
-                    <select value={editingLocation.type} onChange={e => setEditingLocation({...editingLocation, type: e.target.value as 'winery' | 'distillery'})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
-                      <option value="winery">Winery</option>
-                      <option value="distillery">Distillery</option>
+                    <select value={editingLocation.locationTypeId} onChange={e => setEditingLocation({...editingLocation, locationTypeId: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
+                      <option value="" disabled>Select Location Type</option>
+                      {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.name}</option>)}
                     </select>
                     <input type="text" placeholder="Tags (comma-separated)" value={editingLocation.tags.join(', ')} onChange={e => setEditingLocation({...editingLocation, tags: e.target.value.split(',').map(t=>t.trim())})} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
                     <div className="flex justify-end space-x-4 pt-4">

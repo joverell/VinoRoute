@@ -23,13 +23,21 @@ export interface Rating {
   };
 }
 
+export interface LocationType {
+  id: string;
+  name: string;
+  mapImageUrl: string;
+}
+
 // The Winery and Region interfaces remain the same
 export interface Winery {
   id:string | number;
   name: string;
   coords: { lat: number; lng: number };
   tags: string[];
-  type: 'winery' | 'distillery' | 'custom';
+  type: 'winery' | 'distillery' | 'custom'; // This will be deprecated
+  locationTypeId?: string;
+  locationType?: LocationType;
   region: string;
   openingHours: { [key: number]: { open: number; close: number } | null };
   address?: string;

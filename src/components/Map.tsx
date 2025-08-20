@@ -37,8 +37,15 @@ export default function MapComponent(props: MapProps) {
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
-  const wineryIcon = useMemo(() => {
-    if (!isLoaded) return undefined;
+  const getMarkerIcon = (winery: Winery): google.maps.Icon => {
+    if (winery.locationType && winery.locationType.mapImageUrl) {
+      return {
+        url: winery.locationType.mapImageUrl,
+        scaledSize: new google.maps.Size(32, 32),
+        anchor: new google.maps.Point(16, 16),
+      };
+    }
+    // Default icon
     return {
       path: 'M8.5,1.5 C8.5,1.5 8.5,4.5 9.5,4.5 C10.5,4.5 10.5,1.5 10.5,1.5 M8,5 L11,5 L11,6 C11,6 12,6.5 12,8 L12,18 C12,19 11,20 9.5,20 C8,20 7,19 7,18 L7,8 C7,6.5 8,6 8,6 L8,5 M9.5,7 C9.5,7 9,7.5 9,8 L10,8 C10,7.5 9.5,7 9.5,7',
       fillColor: '#FF5757',
@@ -49,21 +56,7 @@ export default function MapComponent(props: MapProps) {
       scale: 1.5,
       anchor: new google.maps.Point(9.5, 20),
     };
-  }, [isLoaded]);
-
-  const distilleryIcon = useMemo(() => {
-    if (!isLoaded) return undefined;
-    return {
-      path: 'M53.037,22.997c45.328,0,90.655,0,135.983,0 c0.462,32.558,1.689,62.144,7.999,90.989c6.033,27.583,16.253,53.933,19.997,78.99c5.57,37.27-10.411,63.548-32.996,78.99 c-5.856,4.005-22.15,10.517-22.997,15.998c-0.606,3.93,11.369,21.283,13.999,26.997c9.577,20.81,16.729,36.086-6,46.994 c-32.329,0-64.658,0-96.987,0c-22.155-10.187-15.856-25.577-6-46.994c1.861-4.043,14.256-22.396,13.999-25.997 c-0.469-6.562-16.75-12.727-22.998-16.998c-21.745-14.868-38.533-39.579-32.996-77.99c3.591-24.906,13.543-50.564,19.998-77.99 c6.645-28.237,6.786-58.19,7.999-89.989C51.952,24.578,51.872,23.165,53.037,22.997z',
-      fillColor: '#333333',
-      fillOpacity: 1.0,
-      strokeWeight: 1,
-      strokeColor: '#FFFFFF',
-      rotation: 0,
-      scale: 0.05,
-      anchor: new google.maps.Point(120, 200),
-    };
-  }, [isLoaded]);
+  };
 
   useEffect(() => {
     if (mapRef.current) {
@@ -129,11 +122,11 @@ export default function MapComponent(props: MapProps) {
       {directions && <DirectionsRenderer directions={directions} options={{ suppressMarkers: true, polylineOptions: { strokeColor: '#FF5757', strokeWeight: 5 } }} />}
       
       {otherAvailableWineries.map((winery) => (
-        <MarkerF 
-          key={winery.id} 
-          position={winery.coords} 
-          title={winery.name} 
-          icon={winery.type === 'distillery' ? distilleryIcon : wineryIcon} 
+        <MarkerF
+          key={winery.id}
+          position={winery.coords}
+          title={winery.name}
+          icon={getMarkerIcon(winery)}
           onClick={(e) => {
             e.stop();
             onSelectWinery(winery);
