@@ -575,7 +575,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                                   <span>{loc.name}</span>
                                   <div className="space-x-4 flex items-center">
                                     <button onClick={() => setSelectedLocationForWines({ ...loc })} className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600">Manage Wines</button>
-                                    <button onClick={() => setEditingLocation({ ...loc })} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
+                                    <button onClick={() => setEditingLocation({ ...loc, tags: loc.tags || [] })} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
                                     <button onClick={() => handleDeleteLocation(loc)} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
                                   </div>
                                 </li>
