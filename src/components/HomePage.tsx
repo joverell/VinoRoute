@@ -488,7 +488,7 @@ export default function HomePage() {
       : true;
 
     const tagMatch = searchTags.length > 0
-      ? searchTags.every(tag => w.tags.includes(tag))
+      ? searchTags.every(tag => (w.tags || []).includes(tag))
       : true;
 
     return regionMatch && typeMatch && searchMatch && tagMatch;
