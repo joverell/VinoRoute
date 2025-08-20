@@ -1,14 +1,38 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { LocationType } from '@/types';
+import formidable from 'formidable';
+import { promises as fs } from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+async function parseFormData(request: Request) {
+  const form = formidable({});
+  const [fields, files] = await form.parse(request);
+
+  const typedFields: { [key: string]: string } = {};
+  for (const key in fields) {
+    const value = fields[key];
+    if (Array.isArray(value) && value.length > 0) {
+      typedFields[key] = value[0];
+    }
+  }
+
+  return { fields: typedFields, files };
+}
 
 export async function PUT(
   request: Request,
   { params: paramsPromise }: { params: Promise<{ id: string }> },
 ) {
-  const { adminDb, adminAuth } = initializeFirebaseAdmin();
+  const { adminDb, adminAuth, adminStorage } = initializeFirebaseAdmin();
   try {
-    if (!adminDb || !adminAuth) {
+    if (!adminDb || !adminAuth || !adminStorage) {
       return NextResponse.json(
         { error: "Firebase admin not initialized" },
         { status: 500 },
@@ -22,10 +46,10 @@ export async function PUT(
     const token = authorization.split("Bearer ")[1];
     await adminAuth.verifyIdToken(token);
 
-    const locationTypeData: Partial<Omit<LocationType, "id">> =
-      await request.json();
+    const { fields, files } = await parseFormData(request);
+    const { singular, plural } = fields;
 
-    if (!locationTypeData.singular && !locationTypeData.plural) {
+    if (!singular && !plural) {
       return NextResponse.json(
         { error: "Invalid request body: at least one of 'singular' or 'plural' must be provided" },
         { status: 400 },
@@ -34,6 +58,45 @@ export async function PUT(
 
     const params = await paramsPromise;
     const docRef = adminDb.collection("location_types").doc(params.id);
+    const doc = await docRef.get();
+    const existingData = doc.data() as LocationType;
+
+    const locationTypeData: Partial<Omit<LocationType, "id">> = {
+        singular,
+        plural,
+    };
+
+    if (files.icon) {
+      const iconFile = Array.isArray(files.icon) ? files.icon[0] : files.icon;
+      if (iconFile) {
+        if (existingData.icon) {
+          try {
+            const oldIconPath = decodeURIComponent(new URL(existingData.icon).pathname.split('/').slice(3).join('/'));
+            await adminStorage.bucket().file(oldIconPath).delete();
+          } catch (e) {
+            console.error("Failed to delete old icon:", e);
+          }
+        }
+
+        const bucket = adminStorage.bucket();
+        const fileContent = await fs.readFile(iconFile.filepath);
+        const destination = `location-type-icons/${uuidv4()}-${iconFile.originalFilename}`;
+        const file = bucket.file(destination);
+
+        await file.save(fileContent, {
+          metadata: {
+            contentType: iconFile.mimetype,
+          },
+        });
+
+        const [url] = await file.getSignedUrl({
+          action: 'read',
+          expires: '03-09-2491',
+        });
+        locationTypeData.icon = url;
+      }
+    }
+
     await docRef.update(locationTypeData);
 
     return NextResponse.json({
@@ -81,6 +144,18 @@ export async function DELETE(
 
     const params = await paramsPromise;
     const docRef = adminDb.collection("location_types").doc(params.id);
+    const doc = await docRef.get();
+    const existingData = doc.data() as LocationType;
+
+    if (existingData.icon) {
+        try {
+            const oldIconPath = decodeURIComponent(new URL(existingData.icon).pathname.split('/').slice(3).join('/'));
+            await initializeFirebaseAdmin().adminStorage?.bucket().file(oldIconPath).delete();
+        } catch (e) {
+            console.error("Failed to delete icon:", e);
+        }
+    }
+
     await docRef.delete();
 
     return NextResponse.json({

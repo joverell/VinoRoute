@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LocationType } from '@/types';
 import { User } from 'firebase/auth';
+import Image from 'next/image';
 
 interface LocationTypeManagementProps {
   user: User | null;
@@ -18,6 +19,8 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
 
   const [singular, setSingular] = useState('');
   const [plural, setPlural] = useState('');
+  const [icon, setIcon] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchLocationTypes = useCallback(async () => {
     if (!user) return;
@@ -47,58 +50,36 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
     fetchLocationTypes();
   }, [fetchLocationTypes]);
 
-  const handleAdd = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
-    try {
-      const token = await user.getIdToken();
-      const response = await fetch('/api/location-types', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ singular, plural })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add location type');
-      }
-
-      await fetchLocationTypes();
-      setIsAdding(false);
-      setSingular('');
-      setPlural('');
-    } catch (err) {
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred');
+    const formData = new FormData();
+    formData.append('singular', singular);
+    formData.append('plural', plural);
+    if (icon) {
+      formData.append('icon', icon);
     }
-  };
-
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !isEditing) return;
 
     try {
       const token = await user.getIdToken();
-      const response = await fetch(`/api/location-types/${isEditing.id}`, {
-        method: 'PUT',
+      const url = isEditing ? `/api/location-types/${isEditing.id}` : '/api/location-types';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ singular, plural })
+        body: formData
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update location type');
+        throw new Error(`Failed to ${isEditing ? 'update' : 'add'} location type`);
       }
 
       await fetchLocationTypes();
-      setIsEditing(null);
-      setSingular('');
-      setPlural('');
+      cancelForm();
     } catch (err) {
       if (err instanceof Error) setError(err.message);
       else setError('An unknown error occurred');
@@ -133,6 +114,10 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
     setSingular(locationType.singular);
     setPlural(locationType.plural);
     setIsAdding(false);
+    setIcon(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
   };
 
   const startAdding = () => {
@@ -140,6 +125,10 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
     setIsEditing(null);
     setSingular('');
     setPlural('');
+    setIcon(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
   }
 
   const cancelForm = () => {
@@ -147,6 +136,10 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
     setIsEditing(null);
     setSingular('');
     setPlural('');
+    setIcon(null);
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
   }
 
   if (loading) return <div>Loading location types...</div>;
@@ -157,7 +150,7 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       <h2 className="text-2xl font-semibold mb-4">Location Types ({locationTypes.length})</h2>
 
       {isAdding || isEditing ? (
-        <form onSubmit={isEditing ? handleUpdate : handleAdd} className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+        <form onSubmit={handleFormSubmit} className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
           <h3 className="text-xl font-semibold mb-2">{isEditing ? 'Edit' : 'Add'} Location Type</h3>
           <div className="space-y-4">
             <input
@@ -176,6 +169,21 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
               required
               className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md"
             />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">Icon</label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => setIcon(e.target.files ? e.target.files[0] : null)}
+                className="w-full px-4 py-2 mt-1 bg-gray-50 dark:bg-gray-700 border rounded-md"
+              />
+              {isEditing && isEditing.icon && (
+                <div className="mt-2">
+                  <p className="text-sm">Current icon:</p>
+                  <Image src={isEditing.icon} alt="icon" width="32" height="32" className="w-8 h-8"/>
+                </div>
+              )}
+            </div>
           </div>
           <div className="mt-4 space-x-2">
             <button type="submit" className="px-4 py-2 bg-coral-500 text-white font-bold rounded-md hover:bg-coral-600">
@@ -188,8 +196,8 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
         </form>
       ) : (
         <div className="mb-4">
-          <button onClick={startAdding} className="px-4 py-2 bg-coral-500 text-white font-bold rounded-md hover:bg-coral-600">
-            + Add Location Type
+          <button onClick={startAdding} className="px-6 py-3 bg-green-500 text-white font-bold rounded-lg shadow-md hover:bg-green-600 text-lg">
+            + Add New Location Type
           </button>
         </div>
       )}
@@ -197,9 +205,12 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       <div className="space-y-4">
         {locationTypes.map(lt => (
           <div key={lt.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow flex justify-between items-center">
-            <div>
-              <p className="font-bold">{lt.singular}</p>
-              <p className="text-sm text-gray-500">{lt.plural}</p>
+            <div className="flex items-center">
+              {lt.icon && <Image src={lt.icon} alt="icon" width="32" height="32" className="w-8 h-8 mr-4"/>}
+              <div>
+                <p className="font-bold">{lt.singular}</p>
+                <p className="text-sm text-gray-500">{lt.plural}</p>
+              </div>
             </div>
             <div className="space-x-2">
               <button onClick={() => startEditing(lt)} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
