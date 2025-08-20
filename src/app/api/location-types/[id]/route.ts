@@ -56,7 +56,7 @@ export async function PUT(
             await adminStorage.bucket().file(oldIconPath).delete();
           }
         } catch (e) {
-          console.error("Failed to delete old icon:", e);
+            console.error("Failed to delete old icon:", e);
         }
       }
 

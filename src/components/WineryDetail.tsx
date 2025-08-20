@@ -1,7 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
-import { Winery } from "@/types";
+import { Winery, Rating } from "@/types";
 import { formatAddress } from '@/utils/formatAddress';
+
+interface PopulatedRating extends Rating {
+  user: {
+    uid: string;
+    displayName: string;
+  } | null;
+  winery: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+const StarRating = ({ rating }: { rating: number }) => {
+  return (
+    <div className="flex items-center">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`text-xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+        >
+          &#9733;
+        </span>
+      ))}
+    </div>
+  );
+};
 
 interface WineryDetailProps {
   winery: Winery;
@@ -16,6 +42,25 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [ratings, setRatings] = useState<PopulatedRating[]>([]);
+
+  const fetchRatings = async () => {
+    try {
+      const response = await fetch(`/api/wineries/${winery.id}/ratings`);
+      if (response.ok) {
+        const data = await response.json();
+        setRatings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching ratings:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (winery.id) {
+      fetchRatings();
+    }
+  }, [winery.id]);
 
   const handleRatingSubmit = async () => {
     if (!user) {
@@ -45,6 +90,7 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
       alert('Rating submitted!');
       setRating(0);
       setComment('');
+      fetchRatings(); // Re-fetch ratings to show the new one
     } catch (error) {
       console.error('Error submitting rating:', error);
       alert('Failed to submit rating.');
@@ -138,6 +184,23 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
           </button>
         )}
       </div>
+
+      {ratings.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <h4 className="text-lg font-bold text-gray-800 mb-2">Comments and Ratings</h4>
+          <div className="space-y-4">
+            {ratings.map((r) => (
+              <div key={r.id} className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-center mb-1">
+                  <p className="font-bold text-sm mr-2">{r.user?.displayName || 'Anonymous'}</p>
+                  <StarRating rating={r.rating} />
+                </div>
+                {r.comment && <p className="text-sm text-gray-600">{r.comment}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

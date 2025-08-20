@@ -21,6 +21,14 @@ export interface Rating {
     seconds: number;
     nanoseconds: number;
   };
+  user?: {
+    uid: string;
+    displayName: string;
+  };
+  winery?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface LocationType {
