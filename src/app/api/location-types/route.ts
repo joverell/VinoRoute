@@ -1,31 +1,7 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { LocationType } from '@/types';
-import formidable from 'formidable';
-import { promises as fs } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-async function parseFormData(request: Request) {
-  const form = formidable({});
-  const [fields, files] = await form.parse(request);
-
-  const typedFields: { [key: string]: string } = {};
-  for (const key in fields) {
-    const value = fields[key];
-    if (Array.isArray(value) && value.length > 0) {
-      typedFields[key] = value[0];
-    }
-  }
-
-  return { fields: typedFields, files };
-}
-
 
 export async function POST(request: Request) {
   const { adminDb, adminAuth, adminStorage } = initializeFirebaseAdmin();
@@ -41,34 +17,33 @@ export async function POST(request: Request) {
     const token = authorization.split('Bearer ')[1];
     await adminAuth.verifyIdToken(token);
 
-    const { fields, files } = await parseFormData(request);
-    const { singular, plural } = fields;
+    const formData = await request.formData();
+    const singular = formData.get('singular') as string;
+    const plural = formData.get('plural') as string;
+    const iconFile = formData.get('icon') as File | null;
 
     if (!singular || !plural) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
     let iconUrl = '';
-    if (files.icon) {
-      const iconFile = Array.isArray(files.icon) ? files.icon[0] : files.icon;
-      if (iconFile) {
-        const bucket = adminStorage.bucket();
-        const fileContent = await fs.readFile(iconFile.filepath);
-        const destination = `location-type-icons/${uuidv4()}-${iconFile.originalFilename}`;
-        const file = bucket.file(destination);
+    if (iconFile) {
+      const bucket = adminStorage.bucket();
+      const buffer = Buffer.from(await iconFile.arrayBuffer());
+      const destination = `location-type-icons/${uuidv4()}-${iconFile.name}`;
+      const file = bucket.file(destination);
 
-        await file.save(fileContent, {
-          metadata: {
-            contentType: iconFile.mimetype,
-          },
-        });
+      await file.save(buffer, {
+        metadata: {
+          contentType: iconFile.type,
+        },
+      });
 
-        const [url] = await file.getSignedUrl({
-          action: 'read',
-          expires: '03-09-2491',
-        });
-        iconUrl = url;
-      }
+      const [url] = await file.getSignedUrl({
+        action: 'read',
+        expires: '03-09-2491',
+      });
+      iconUrl = url;
     }
 
     const locationTypeData: Omit<LocationType, 'id'> = {
