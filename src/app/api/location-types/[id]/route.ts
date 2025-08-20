@@ -5,9 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { adminDb, adminAuth, adminStorage } = initializeFirebaseAdmin();
+  const { id } = await params;
   try {
     if (!adminDb || !adminAuth || !adminStorage) {
       return NextResponse.json(
@@ -35,7 +36,7 @@ export async function PUT(
       );
     }
 
-    const docRef = adminDb.collection("location_types").doc(params.id);
+    const docRef = adminDb.collection("location_types").doc(id);
     const doc = await docRef.get();
     if (!doc.exists) {
         return NextResponse.json({ error: 'Location type not found' }, { status: 404 });
@@ -85,7 +86,7 @@ export async function PUT(
       message: "Location type updated successfully",
     });
   } catch (error) {
-    console.error(`Error updating location type ${params.id}:`, error);
+    console.error(`Error updating location type ${id}:`, error);
     if (error instanceof Error && "code" in error) {
       const firebaseError = error as { code: string; message: string };
       if (
@@ -104,9 +105,10 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { adminDb, adminAuth, adminStorage } = initializeFirebaseAdmin();
+  const { id } = await params;
   try {
     if (!adminDb || !adminAuth || !adminStorage) {
       return NextResponse.json(
@@ -122,7 +124,7 @@ export async function DELETE(
     const token = authorization.split("Bearer ")[1];
     await adminAuth.verifyIdToken(token);
 
-    const docRef = adminDb.collection("location_types").doc(params.id);
+    const docRef = adminDb.collection("location_types").doc(id);
     const doc = await docRef.get();
     if (!doc.exists) {
         return NextResponse.json({ error: 'Location type not found' }, { status: 404 });
@@ -149,7 +151,7 @@ export async function DELETE(
       message: "Location type deleted successfully",
     });
   } catch (error) {
-    console.error(`Error deleting location type ${params.id}:`, error);
+    console.error(`Error deleting location type ${id}:`, error);
     if (error instanceof Error && "code" in error) {
       const firebaseError = error as { code: string; message: string };
       if (

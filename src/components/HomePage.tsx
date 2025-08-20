@@ -8,6 +8,7 @@ import WineryDetailPanel from '@/components/WineryDetailPanel';
 import { Winery, Region, SavedTour, LocationType } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
+import JokeOfTheDay from './JokeOfTheDay';
 import Banner from './Banner';
 import { db, auth } from '@/utils/firebase';
 import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
@@ -479,7 +480,7 @@ export default function HomePage() {
     }
 
     const typeMatch = locationTypeFilters.length === 0 ||
-      locationTypeFilters.includes(w.locationTypeId) ||
+      (w.locationTypeId && locationTypeFilters.includes(w.locationTypeId)) ||
       (!w.locationTypeId && w.type && locationTypeFilters.some(filterId => {
         const selectedLocationType = locationTypes.find(lt => lt.id === filterId);
         return selectedLocationType && w.type.toLowerCase() === selectedLocationType.singular.toLowerCase();
@@ -574,6 +575,7 @@ export default function HomePage() {
         )}
       </main>
       <PrintableItinerary itinerary={itinerary} startTime={startTime} />
+      <JokeOfTheDay />
     </div>
   );
 }
