@@ -62,7 +62,7 @@ export default function WinesManagement({ user }: WinesManagementProps) {
       setNewWineData({ ...wine, locationId: wine.locationId });
     } else {
       setEditingWine(null);
-      setNewWineData({ name: '', locationId: locations[0]?.id || '', type: 'TBD', producer: 'TBD', region: '', country: 'Australia' });
+      setNewWineData({ name: '', locationId: String(locations[0]?.id || ''), type: 'TBD', producer: 'TBD', region: '', country: 'Australia' });
     }
     setIsModalOpen(true);
   };

@@ -1,7 +1,7 @@
 'use client';
 import dynamic from 'next/dynamic';
-import AdminLayout from './AdminLayout';
 
+const AdminLayout = dynamic(() => import('./AdminLayout'), { ssr: false });
 const AdminPageClient = dynamic(() => import('./AdminPageClient'), { ssr: false });
 
 export default function AdminPage() {

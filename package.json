@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@googlemaps/google-maps-services-js": "^3.4.2",
     "@googlemaps/places": "^2.1.0",
     "@react-google-maps/api": "^2.20.7",
     "firebase": "^12.1.0",
