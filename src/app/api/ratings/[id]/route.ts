@@ -18,9 +18,10 @@ async function getAuthenticatedUser(request: Request, adminAuth: Auth | null): P
     }
 }
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { adminDb, adminAuth } = initializeFirebaseAdmin();
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser(request, adminAuth);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -30,7 +31,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
             return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
         }
 
-        const ratingDoc = await adminDb.collection('ratings').doc(params.id).get();
+        const ratingDoc = await adminDb.collection('ratings').doc(id).get();
 
         if (!ratingDoc.exists) {
             return NextResponse.json({ error: 'Rating not found' }, { status: 404 });
@@ -38,14 +39,15 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
         return NextResponse.json({ id: ratingDoc.id, ...ratingDoc.data() });
     } catch (error) {
-        console.error(`Error fetching rating ${params.id}:`, error);
+        console.error(`Error fetching rating:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { adminDb, adminAuth } = initializeFirebaseAdmin();
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser(request, adminAuth);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,20 +59,21 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
         const { comment } = await request.json();
 
-        await adminDb.collection('ratings').doc(params.id).update({
+        await adminDb.collection('ratings').doc(id).update({
             comment: comment || '',
         });
 
         return NextResponse.json({ message: 'Rating updated successfully' });
     } catch (error) {
-        console.error(`Error updating rating ${params.id}:`, error);
+        console.error(`Error updating rating:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { adminDb, adminAuth } = initializeFirebaseAdmin();
     try {
+        const { id } = await params;
         const user = await getAuthenticatedUser(request, adminAuth);
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -80,11 +83,11 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
             return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
         }
 
-        await adminDb.collection('ratings').doc(params.id).delete();
+        await adminDb.collection('ratings').doc(id).delete();
 
         return NextResponse.json({ message: 'Rating deleted successfully' });
     } catch (error) {
-        console.error(`Error deleting rating ${params.id}:`, error);
+        console.error(`Error deleting rating:`, error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

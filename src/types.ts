@@ -4,9 +4,11 @@ export interface Wine {
   lwin: string;
   name: string;
   type: string;
-  producer: string;
+  producer:string;
   region: string;
   country: string;
+  locationId?: string;
+  locationName?: string;
 }
 
 export interface Rating {

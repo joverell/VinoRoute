@@ -13,8 +13,6 @@ const initializeFirebaseAdmin = () => {
       });
     } catch (error) {
       console.error('Firebase admin initialization error', error);
-      console.log('Private Key Type:', typeof process.env.FIREBASE_PRIVATE_KEY);
-      console.log('Private Key Length:', process.env.FIREBASE_PRIVATE_KEY?.length);
       return { adminDb: null, adminAuth: null };
     }
   }
