@@ -19,7 +19,10 @@ interface MapProps {
   onMapClick: (poi: ClickedPoi | null) => void;
   onAddPoiToTrip: (poi: ClickedPoi) => void;
   showRegionOverlay: boolean;
-  mapBounds: google.maps.LatLngBoundsLiteral | null; // New prop
+  mapBounds: google.maps.LatLngBoundsLiteral | null;
+  onBoundsChanged: (bounds: google.maps.LatLngBounds | null) => void;
+  onSearchThisArea: () => void;
+  isSearching: boolean;
 }
 
 const createNumberedIcon = (number: number, isLoaded: boolean) => {
@@ -33,7 +36,11 @@ const createNumberedIcon = (number: number, isLoaded: boolean) => {
 };
 
 export default function MapComponent(props: MapProps) {
-  const { isLoaded, itinerary, directions, onSelectWinery, availableWineries, selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay, mapBounds } = props;
+  const {
+    isLoaded, itinerary, directions, onSelectWinery, availableWineries,
+    selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay,
+    mapBounds, onBoundsChanged, onSearchThisArea, isSearching
+  } = props;
 
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -80,14 +87,20 @@ export default function MapComponent(props: MapProps) {
   const otherAvailableWineries = availableWineries.filter(winery => !itineraryWineryIds.has(winery.id));
 
   return (
-    <GoogleMap
-      mapContainerStyle={{ width: '100%', height: '100%' }}
-      center={selectedRegion.center}
-      zoom={10}
-      options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
-      onLoad={(map) => { mapRef.current = map; }}
-      onClick={(e) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    <div className="relative w-full h-full">
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
+        center={selectedRegion.center}
+        zoom={10}
+        options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
+        onLoad={(map) => { mapRef.current = map; }}
+        onIdle={() => {
+          if (mapRef.current) {
+            onBoundsChanged(mapRef.current.getBounds());
+          }
+        }}
+        onClick={(e) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const event = e as any;
         if (event.placeId) {
           event.stop();
@@ -166,5 +179,15 @@ export default function MapComponent(props: MapProps) {
         </InfoWindowF>
       )}
     </GoogleMap>
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <button
+          onClick={onSearchThisArea}
+          disabled={isSearching}
+          className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSearching ? 'Searching...' : 'Search This Area'}
+        </button>
+      </div>
+    </div>
   );
 }

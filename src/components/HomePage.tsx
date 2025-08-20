@@ -51,6 +51,8 @@ export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [locationTypeFilter, setLocationTypeFilter] = useState('all');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [currentMapBounds, setCurrentMapBounds] = useState<google.maps.LatLngBounds | null>(null);
 
   const searchParams = useSearchParams();
 
@@ -402,6 +404,33 @@ export default function HomePage() {
     );
   };
 
+  const handleSearchThisArea = async () => {
+    if (!currentMapBounds) {
+      alert("Map bounds not set yet. Please move the map first.");
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const response = await fetch('/api/search-area', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bounds: currentMapBounds.toJSON() }),
+      });
+      const newLocations = await response.json();
+      if (newLocations.length > 0) {
+        setAllLocations(prevLocations => [...prevLocations, ...newLocations]);
+        alert(`Found ${newLocations.length} new locations!`);
+      } else {
+        alert("No new locations found in this area.");
+      }
+    } catch (error) {
+      console.error("Error searching this area:", error);
+      alert("An error occurred while searching this area.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const availableWineries = allLocations.filter(w => {
     const inTrip = tripStops.some(stop => stop.winery.id === w.id);
     if (inTrip) return false;
@@ -478,8 +507,8 @@ export default function HomePage() {
         <div className="flex-grow h-full">
           <MapComponent
             isLoaded={isLoaded}
-            itinerary={itinerary} 
-            directions={directions} 
+            itinerary={itinerary}
+            directions={directions}
             onSelectWinery={setSelectedWinery}
             availableWineries={availableWineries}
             selectedRegion={selectedRegion}
@@ -488,6 +517,9 @@ export default function HomePage() {
             onAddPoiToTrip={handleAddPoiToTrip}
             showRegionOverlay={showRegionOverlay}
             mapBounds={mapBounds}
+            onBoundsChanged={setCurrentMapBounds}
+            onSearchThisArea={handleSearchThisArea}
+            isSearching={isSearching}
           />
         </div>
         {selectedWinery && (
