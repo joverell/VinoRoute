@@ -44,7 +44,7 @@ async function isLocationNew(db: FirebaseFirestore.Firestore, placeId: string): 
   return !doc.exists;
 }
 
-async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, locationTypes: LocationType[]): Promise<Winery | null> {
+async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, locationTypes: LocationType[], searchType: string): Promise<Winery | null> {
   const placeId = place.place_id;
   if (!placeId) {
     console.error('Missing place_id for place:', place.name);
@@ -95,7 +95,14 @@ async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, 
   }
 
   let locationType: LocationType | undefined;
-  if (details.types) {
+
+  // First, try to find the location type based on the search query that found this place
+  if (searchType) {
+    locationType = locationTypes.find(lt => lt.singular.toLowerCase() === searchType.toLowerCase());
+  }
+
+  // If not found by search type, try to infer from Google's types (fallback)
+  if (!locationType && details.types) {
     for (const type of locationTypes) {
       // Check if any of the Google-provided types match the singular name of our location types
       if (details.types.includes(type.singular.toLowerCase())) {
@@ -182,22 +189,24 @@ export async function POST(req: NextRequest) {
         };
     });
 
-    const [wineries, distilleries] = await Promise.all([
-      searchPlacesInBounds(bounds, 'winery'),
-      searchPlacesInBounds(bounds, 'distillery')
-    ]);
+    const searchTasks = locationTypes.map(lt => searchPlacesInBounds(bounds, lt.singular.toLowerCase()));
+    const searchResults = await Promise.all(searchTasks);
 
-    const allPlaces = [...wineries, ...distilleries];
     const newLocations: Winery[] = [];
     const seenPlaceIds = new Set<string>();
 
-    for (const place of allPlaces) {
-      if (place.place_id && !seenPlaceIds.has(place.place_id)) {
-        seenPlaceIds.add(place.place_id);
-        if (await isLocationNew(db, place.place_id)) {
-          const newLocation = await addLocation(db, place, locationTypes);
-          if (newLocation) {
-            newLocations.push(newLocation);
+    for (let i = 0; i < searchResults.length; i++) {
+      const places = searchResults[i];
+      const searchType = locationTypes[i].singular;
+
+      for (const place of places) {
+        if (place.place_id && !seenPlaceIds.has(place.place_id)) {
+          seenPlaceIds.add(place.place_id);
+          if (await isLocationNew(db, place.place_id)) {
+            const newLocation = await addLocation(db, place, locationTypes, searchType);
+            if (newLocation) {
+              newLocations.push(newLocation);
+            }
           }
         }
       }
