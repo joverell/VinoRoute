@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/utils/firebase-admin';
-import { Winery } from '@/types';
+import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
+import { Winery, LocationType } from '@/types';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, type: string): Promise<any[]> {
+interface GooglePlace {
+  place_id: string;
+  name: string;
+  vicinity?: string;
+  [key: string]: unknown;
+}
+
+interface AddressComponent {
+    long_name: string;
+    short_name: string;
+    types: string[];
+}
+
+async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, type: string): Promise<GooglePlace[]> {
   const { north, south, east, west } = bounds;
   const query = `${type}`;
   const locationBias = `rectangle:${south},${west}|${north},${east}`;
@@ -25,13 +38,13 @@ async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, typ
   }
 }
 
-async function isLocationNew(placeId: string): Promise<boolean> {
+async function isLocationNew(db: FirebaseFirestore.Firestore, placeId: string): Promise<boolean> {
   const locationRef = db.collection('locations').doc(placeId);
   const doc = await locationRef.get();
   return !doc.exists;
 }
 
-async function addLocation(place: any, locationTypes: any[]): Promise<Winery | null> {
+async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, locationTypes: LocationType[]): Promise<Winery | null> {
   const placeId = place.place_id;
   if (!placeId) {
     console.error('Missing place_id for place:', place.name);
@@ -64,8 +77,8 @@ async function addLocation(place: any, locationTypes: any[]): Promise<Winery | n
   let state = 'Unknown';
   let stateAbbr = 'Unknown';
   if (reverseGeocodeData.status === 'OK' && reverseGeocodeData.results[0]) {
-    const addressComponents = reverseGeocodeData.results[0].address_components;
-    const stateComponent = addressComponents.find((c: any) => c.types.includes('administrative_area_level_1'));
+    const addressComponents = reverseGeocodeData.results[0].address_components as AddressComponent[];
+    const stateComponent = addressComponents.find((c: AddressComponent) => c.types.includes('administrative_area_level_1'));
     if (stateComponent) {
       state = stateComponent.long_name;
       stateAbbr = stateComponent.short_name;
@@ -74,13 +87,14 @@ async function addLocation(place: any, locationTypes: any[]): Promise<Winery | n
 
   let region = place.vicinity || 'Unknown';
   if (reverseGeocodeData.status === 'OK' && reverseGeocodeData.results[0]) {
-      const localityComponent = reverseGeocodeData.results[0].address_components.find((c: any) => c.types.includes('locality'));
+      const addressComponents = reverseGeocodeData.results[0].address_components as AddressComponent[];
+      const localityComponent = addressComponents.find((c: AddressComponent) => c.types.includes('locality'));
       if (localityComponent) {
           region = `${localityComponent.long_name}, ${stateAbbr}`;
       }
   }
 
-  const type = details.types?.includes('winery') ? 'winery' : 'distillery';
+  const type: 'winery' | 'distillery' = details.types?.includes('winery') ? 'winery' : 'distillery';
   const locationType = locationTypes.find(lt => lt.name.toLowerCase() === type);
 
   const newLocationData = {
@@ -97,7 +111,7 @@ async function addLocation(place: any, locationTypes: any[]): Promise<Winery | n
     type: type,
     openingHours: details.opening_hours || {},
     tags: details.types || [],
-    locationTypeId: locationType?.id || null,
+    locationTypeId: locationType?.id || undefined,
   };
 
   await db.collection('locations').doc(placeId).set(newLocationData);
@@ -118,6 +132,11 @@ async function addLocation(place: any, locationTypes: any[]): Promise<Winery | n
 
 export async function POST(req: NextRequest) {
   try {
+    const { adminDb: db } = initializeFirebaseAdmin();
+    if (!db) {
+      return NextResponse.json({ error: 'Firebase Admin not initialized' }, { status: 500 });
+    }
+
     const { bounds } = await req.json();
 
     if (!bounds) {
@@ -125,7 +144,10 @@ export async function POST(req: NextRequest) {
     }
 
     const locationTypesSnapshot = await db.collection('location-types').get();
-    const locationTypes = locationTypesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const locationTypes = locationTypesSnapshot.docs.map(doc => {
+        const data = doc.data() as { name: string; mapImageUrl: string };
+        return { id: doc.id, ...data };
+    });
 
     const [wineries, distilleries] = await Promise.all([
       searchPlacesInBounds(bounds, 'winery'),
@@ -139,8 +161,8 @@ export async function POST(req: NextRequest) {
     for (const place of allPlaces) {
       if (place.place_id && !seenPlaceIds.has(place.place_id)) {
         seenPlaceIds.add(place.place_id);
-        if (await isLocationNew(place.place_id)) {
-          const newLocation = await addLocation(place, locationTypes);
+        if (await isLocationNew(db, place.place_id)) {
+          const newLocation = await addLocation(db, place, locationTypes);
           if (newLocation) {
             newLocations.push(newLocation);
           }

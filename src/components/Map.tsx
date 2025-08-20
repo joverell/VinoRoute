@@ -96,7 +96,7 @@ export default function MapComponent(props: MapProps) {
         onLoad={(map) => { mapRef.current = map; }}
         onIdle={() => {
           if (mapRef.current) {
-            onBoundsChanged(mapRef.current.getBounds());
+            onBoundsChanged(mapRef.current.getBounds() || null);
           }
         }}
         onClick={(e) => {
