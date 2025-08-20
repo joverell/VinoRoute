@@ -9,6 +9,7 @@ import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocom
 import RatingsManagement from '@/components/admin/RatingsManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import WinesManagement from '@/components/admin/WinesManagement';
+import Toast from '@/components/Toast';
 
 interface AdminPageClientProps {
   user: User | null;
@@ -104,6 +105,8 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [newWineName, setNewWineName] = useState('');
   const [expandedRegions, setExpandedRegions] = useState<{[key:string]: boolean}>({});
   const [activeTab, setActiveTab] = useState('regions');
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [locationFilter, setLocationFilter] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
@@ -118,6 +121,17 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   }, [isLoaded]);
 
   useEffect(() => {
+    const savedTab = localStorage.getItem('adminActiveTab');
+    if (savedTab) {
+      setActiveTab(savedTab);
+    }
+    const savedExpandedRegions = localStorage.getItem('adminExpandedRegions');
+    if (savedExpandedRegions) {
+      setExpandedRegions(JSON.parse(savedExpandedRegions));
+    }
+  }, []);
+
+  useEffect(() => {
     if (selectedLocationForWines) {
         const updatedLocation = locations.find(l => l.id === selectedLocationForWines.id);
         if (updatedLocation) {
@@ -125,6 +139,14 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         }
     }
   }, [locations, selectedLocationForWines]);
+
+  useEffect(() => {
+    localStorage.setItem('adminActiveTab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('adminExpandedRegions', JSON.stringify(expandedRegions));
+  }, [expandedRegions]);
 
   const getRegionDocId = (name: string) => {
     return name.toLowerCase().replace(/, /g, '-').replace(/ /g, '-');
@@ -166,7 +188,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
 
   const addWineryToDatabase = async (wineryData: Omit<Winery, 'id'>) => {
     if (!user) {
-      alert('You must be logged in to add a winery.');
+      setToast({ message: 'You must be logged in to add a winery.', type: 'error' });
       return;
     }
     setIsSubmitting(true);
@@ -184,7 +206,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
       if (!response.ok) {
         throw new Error(data.error || 'Failed to add winery');
       }
-      alert(`Winery "${wineryData.name}" added successfully!`);
+      setToast({ message: `Winery "${wineryData.name}" added successfully!`, type: 'success' });
       // Reset form
       setName('');
       setAddress('');
@@ -194,9 +216,9 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
       await fetchData();
     } catch (err) {
       if (err instanceof Error) {
-        alert(`Error adding winery: ${err.message}`);
+        setToast({ message: `Error adding winery: ${err.message}`, type: 'error' });
       } else {
-        alert('An unknown error occurred while adding winery.');
+        setToast({ message: 'An unknown error occurred while adding winery.', type: 'error' });
       }
     } finally {
       setIsSubmitting(false);
@@ -248,31 +270,40 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
 
     try {
         const token = await user.getIdToken();
-        const response = await fetch(`/api/locations/${editingLocation.id}`, {
+        const { id, ...locationData } = editingLocation;
+        const response = await fetch(`/api/locations/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(editingLocation)
+            body: JSON.stringify(locationData)
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to update location');
-        alert(`Location "${editingLocation.name}" updated successfully!`);
+        setToast({ message: `Location "${editingLocation.name}" updated successfully!`, type: 'success' });
         setEditingLocation(null);
         fetchData();
     } catch (err) {
-        if (err instanceof Error) alert(`Error: ${err.message}`);
-        else alert('An unknown error occurred.');
+        if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
+        else setToast({ message: 'An unknown error occurred.', type: 'error' });
     } finally {
         setIsSubmitting(false);
     }
   };
 
   const handleWinerySearchAdd = (winery: Partial<Winery>) => {
-    if (winery.name) setName(winery.name);
-    if (winery.address) setAddress(winery.address);
-    if (winery.region) setRegion(winery.region);
-    if (winery.coords) setCoords(winery.coords);
-    // You might want to scroll to the form or highlight it
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const newWineryData: Omit<Winery, 'id'> = {
+        name: winery.name || '',
+        address: winery.address || '',
+        coords: winery.coords || { lat: 0, lng: 0 },
+        region: winery.region || '',
+        type: 'winery',
+        tags: winery.tags || [],
+        openingHours: { // Default opening hours
+            "0": { open: 10, close: 17 }, "1": { open: 10, close: 17 }, "2": { open: 10, close: 17 },
+            "3": { open: 10, close: 17 }, "4": { open: 10, close: 17 }, "5": { open: 10, close: 17 },
+            "6": { open: 10, close: 17 },
+        }
+    };
+    addWineryToDatabase(newWineryData);
   };
 
   const handleDeleteLocation = async (location: Winery) => {
@@ -285,11 +316,11 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to delete location');
-        alert(`Location "${location.name}" deleted.`);
+        setToast({ message: `Location "${location.name}" deleted.`, type: 'success' });
         fetchData();
     } catch (err) {
-        if (err instanceof Error) alert(`Error: ${err.message}`);
-        else alert('An unknown error occurred.');
+        if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
+        else setToast({ message: 'An unknown error occurred.', type: 'error' });
     }
   };
 
@@ -310,12 +341,12 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to add region');
-        alert(`Region "${regionName}" added.`);
+        setToast({ message: `Region "${regionName}" added.`, type: 'success' });
         setRegionName(''); setRegionState(''); setRegionCenterLat(''); setRegionCenterLng('');
         fetchData();
     } catch (err) {
-        if (err instanceof Error) alert(`Error: ${err.message}`);
-        else alert('An unknown error occurred.');
+        if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
+        else setToast({ message: 'An unknown error occurred.', type: 'error' });
     } finally {
         setIsSubmitting(false);
     }
@@ -335,12 +366,11 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to update region');
-        alert(`Region "${editingRegion.name}" updated.`);
+        setToast({ message: `Region "${editingRegion.name}" updated.`, type: 'success' });
         setEditingRegion(null);
         fetchData();
-    } catch (err) {
-        if (err instanceof Error) alert(`Error: ${err.message}`);
-        else alert('An unknown error occurred.');
+    } catch (err)        if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
+        else setToast({ message: 'An unknown error occurred.', type: 'error' });
     } finally {
         setIsSubmitting(false);
     }
@@ -357,11 +387,11 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to delete region');
-        alert(`Region "${region.name}" deleted.`);
+        setToast({ message: `Region "${region.name}" deleted.`, type: 'success' });
         fetchData();
     } catch (err) {
-        if (err instanceof Error) alert(`Error: ${err.message}`);
-        else alert('An unknown error occurred.');
+        if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
+        else setToast({ message: 'An unknown error occurred.', type: 'error' });
     }
   };
 
@@ -417,6 +447,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   return (
     <div className="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
+        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         {!user ? (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <p className="text-center text-gray-600 dark:text-gray-400">Please log in.</p>
@@ -488,6 +519,15 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
 
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                   <h2 className="text-2xl font-semibold mb-4">Regions & Locations</h2>
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      placeholder="Filter locations..."
+                      value={locationFilter}
+                      onChange={e => setLocationFilter(e.target.value)}
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
+                    />
+                  </div>
                   <div className="space-y-6">
                     {regions.map(r => (
                       <div key={getRegionDocId(r.name)} className="border-t pt-4">
@@ -501,7 +541,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                         </div>
                         {expandedRegions[r.name] && (
                           <ul className="mt-2 space-y-2">
-                            {locations.filter(loc => loc.region === r.name).map(loc => (
+                            {locations.filter(loc => loc.region === r.name && loc.name.toLowerCase().includes(locationFilter.toLowerCase())).map(loc => (
                               <li key={loc.id} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md flex justify-between items-center">
                                 <span>{loc.name}</span>
                                 <div className="space-x-4 flex items-center">
@@ -511,8 +551,8 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                                 </div>
                               </li>
                             ))}
-                            {locations.filter(loc => loc.region === r.name).length === 0 && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400">No locations.</p>
+                            {locations.filter(loc => loc.region === r.name && loc.name.toLowerCase().includes(locationFilter.toLowerCase())).length === 0 && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400">No locations found.</p>
                             )}
                           </ul>
                         )}
