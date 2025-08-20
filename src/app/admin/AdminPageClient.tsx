@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Region, Winery, Wine } from '@/types';
+import { Region, Winery, Wine, LocationType } from '@/types';
 import { User } from 'firebase/auth';
 import WinerySearch from '@/components/WinerySearch';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';

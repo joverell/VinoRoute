@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Winery } from "@/types";
+import { Winery, LocationType } from "@/types";
 import WineryCard from "./WineryCard";
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { TripStop, PrepopulatedStop } from './HomePage';
