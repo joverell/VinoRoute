@@ -32,6 +32,7 @@ const AUSTRALIA_REGION: Region = {
 export default function HomePage() {
   const [allLocations, setAllLocations] = useState<Winery[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
+  const [locationTypes, setLocationTypes] = useState<LocationType[]>([]);
   const [tripStops, setTripStops] = useState<TripStop[]>([]);
   const [itinerary, setItinerary] = useState<ItineraryStop[] | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -39,7 +40,6 @@ export default function HomePage() {
   const [defaultDuration, setDefaultDuration] = useState<number>(60);
   const [selectedWinery, setSelectedWinery] = useState<Winery | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
-  const [includeDistilleries, setIncludeDistilleries] = useState(true);
   const [clickedPoi, setClickedPoi] = useState<ClickedPoi | null>(null);
   const [prepopulatedStop, setPrepopulatedStop] = useState<PrepopulatedStop | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -49,6 +49,7 @@ export default function HomePage() {
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBoundsLiteral | null>(null); // <-- NEW STATE FOR BOUNDS
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [locationTypeFilter, setLocationTypeFilter] = useState('all');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const searchParams = useSearchParams();
@@ -95,12 +96,17 @@ export default function HomePage() {
 
         const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
 
+        const locationTypesResponse = await fetch('/api/location-types');
+        const locationTypesData = await locationTypesResponse.json();
+        setLocationTypes(locationTypesData);
+
         const locationsData = querySnapshot.docs.map(doc => {
           const data = doc.data();
           const regionParts = data.region.split(', ');
           const stateAbbr = regionParts[regionParts.length - 1];
           const state = stateMap[stateAbbr] || "Other";
-          return { ...data, id: doc.id, state: state } as Winery;
+          const locationType = locationTypesData.find((lt: LocationType) => lt.id === data.locationTypeId);
+          return { ...data, id: doc.id, state: state, locationType } as Winery;
         });
 
         setAllLocations(locationsData);
@@ -125,7 +131,7 @@ export default function HomePage() {
           const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
           if (savedData) {
             try {
-              const { tripStops: savedStops, startTime, selectedRegionName, includeDistilleries, filterMode, defaultDuration } = JSON.parse(savedData);
+              const { tripStops: savedStops, startTime, selectedRegionName, locationTypeFilter, filterMode, defaultDuration, searchTerm, searchTags } = JSON.parse(savedData);
 
               const rehydratedStops = savedStops.map((stop: TripStop) => {
                 if (stop.winery.type && stop.winery.type !== 'winery') {
@@ -138,8 +144,10 @@ export default function HomePage() {
               setTripStops(rehydratedStops);
               setStartTime(startTime);
               setDefaultDuration(defaultDuration || 60);
-              setIncludeDistilleries(includeDistilleries === undefined ? true : includeDistilleries);
+              setLocationTypeFilter(locationTypeFilter || 'all');
               setFilterMode(filterMode || 'region');
+              setSearchTerm(searchTerm || '');
+              setSearchTags(searchTags || []);
 
               const regionToSelect = regionsData.find(r => r.name === selectedRegionName) || regionsData[0] || null;
               setSelectedRegion(regionToSelect);
@@ -168,12 +176,14 @@ export default function HomePage() {
       tripStops,
       startTime,
       selectedRegionName: selectedRegion?.name,
-      includeDistilleries,
+      locationTypeFilter,
       filterMode,
       defaultDuration,
+      searchTerm,
+      searchTags,
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [tripStops, startTime, selectedRegion, includeDistilleries, filterMode, defaultDuration, allLocations, isInitialLoad]);
+  }, [tripStops, startTime, selectedRegion, locationTypeFilter, filterMode, defaultDuration, searchTerm, searchTags, allLocations, isInitialLoad]);
 
   useEffect(() => {
     if (user && allLocations.length > 0) {
@@ -378,7 +388,7 @@ export default function HomePage() {
 
   const availableWineries = allLocations.filter(w => {
     const inTrip = tripStops.some(stop => stop.winery.id === w.id);
-    if (inTrip) return true;
+    if (inTrip) return false;
 
     let regionMatch;
     if (filterMode === 'country') {
@@ -389,10 +399,10 @@ export default function HomePage() {
       regionMatch = w.region === selectedRegion?.name;
     }
 
-    const typeMatch = includeDistilleries || w.type === 'winery';
+    const typeMatch = locationTypeFilter === 'all' || w.locationTypeId === locationTypeFilter;
 
     const searchMatch = searchTerm.length > 0
-      ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || (w.tags && w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       : true;
 
     const tagMatch = searchTags.length > 0
@@ -400,7 +410,7 @@ export default function HomePage() {
       : true;
 
     return regionMatch && typeMatch && searchMatch && tagMatch;
-  });
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   if (!selectedRegion || !isLoaded) {
     return <div>Loading map data...</div>;
@@ -412,8 +422,6 @@ export default function HomePage() {
         user={user}
         showRegionOverlay={showRegionOverlay}
         onToggleRegionOverlay={() => setShowRegionOverlay(!showRegionOverlay)}
-        includeDistilleries={includeDistilleries}
-        onToggleDistilleries={() => setIncludeDistilleries(!includeDistilleries)}
       />
       <main className="flex flex-grow print:hidden overflow-hidden">
         <Sidebar
@@ -440,9 +448,12 @@ export default function HomePage() {
           onRegionSelection={handleRegionSelection}
           availableWineries={availableWineries}
           regions={regions}
+          locationTypes={locationTypes}
           prepopulatedStop={prepopulatedStop}
           onClearPrepopulatedStop={() => setPrepopulatedStop(null)}
           filterMode={filterMode}
+          locationTypeFilter={locationTypeFilter}
+          onLocationTypeChange={setLocationTypeFilter}
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
           searchTags={searchTags}

@@ -58,9 +58,12 @@ interface SidebarProps {
   onRegionSelection: (value: string) => void;
   availableWineries: Winery[];
   regions: Region[];
+  locationTypes: LocationType[];
   prepopulatedStop: PrepopulatedStop | null;
   onClearPrepopulatedStop: () => void;
   filterMode: 'region' | 'state' | 'country';
+  locationTypeFilter: string;
+  onLocationTypeChange: (type: string) => void;
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
   searchTags: string[];
@@ -73,8 +76,9 @@ export default function Sidebar({
   startTime, onStartTimeChange, onOptimizeRoute, defaultDuration,
   onDefaultDurationChange, onDurationChange, selectedWinery, onSelectWinery, onAddCustomStop,
   selectedRegion, onRegionSelection,
-  availableWineries, regions, prepopulatedStop, onClearPrepopulatedStop,
+  availableWineries, regions, locationTypes, prepopulatedStop, onClearPrepopulatedStop,
   filterMode,
+  locationTypeFilter, onLocationTypeChange,
   searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
@@ -152,20 +156,39 @@ export default function Sidebar({
             <h2 className="text-xl font-bold text-gray-800">Plan Your Tour</h2>
             <div className="my-4">
               <label htmlFor="region" className="block text-sm font-medium text-gray-700">Region</label>
-              <select
-                id="region" name="region"
-                value={selectValue}
-                onChange={(e) => onRegionSelection(e.target.value)}
-                className="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm"
-              >
-                <option value="Australia">All of Australia</option>
-                {Object.entries(groupedRegions).map(([state, stateRegions]) => (
-                  <optgroup key={state} label={state}>
-                    <option value={`state-${state}`}>{`All of ${state}`}</option>
-                    {stateRegions.map(r => <option key={r.name} value={r.name}>{r.name.replace(/, (VIC|SA|WA|NSW|TAS|QLD|ACT)$/, '')}</option>)}
-                  </optgroup>
-                ))}
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="region" className="block text-sm font-medium text-gray-700">Region</label>
+                  <select
+                    id="region" name="region"
+                    value={selectValue}
+                    onChange={(e) => onRegionSelection(e.target.value)}
+                    className="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm"
+                  >
+                    <option value="Australia">All of Australia</option>
+                    {Object.entries(groupedRegions).map(([state, stateRegions]) => (
+                      <optgroup key={state} label={state}>
+                        <option value={`state-${state}`}>{`All of ${state}`}</option>
+                        {stateRegions.map(r => <option key={r.name} value={r.name}>{r.name.replace(/, (VIC|SA|WA|NSW|TAS|QLD|ACT)$/, '')}</option>)}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="locationType" className="block text-sm font-medium text-gray-700">Type</label>
+                  <select
+                    id="locationType" name="locationType"
+                    value={locationTypeFilter}
+                    onChange={(e) => onLocationTypeChange(e.target.value)}
+                    className="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm"
+                  >
+                    <option value="all">All Types</option>
+                    {locationTypes.map(lt => (
+                      <option key={lt.id} value={lt.id}>{lt.name}s</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4 my-4">
               <div>
