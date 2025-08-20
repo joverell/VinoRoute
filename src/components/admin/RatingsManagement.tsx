@@ -130,7 +130,7 @@ const RatingsManagement = ({ user }: RatingsManagementProps) => {
                   <StarRating rating={rating.rating} />
                 </div>
               </div>
-              <p className="text-sm text-gray-500">{new Date(rating.createdAt.seconds * 1000).toLocaleDateString()}</p>
+              <p className="text-sm text-gray-500">{new Date(rating.createdAt).toLocaleDateString()}</p>
             </div>
             {editingRatingId === rating.id ? (
               <textarea
