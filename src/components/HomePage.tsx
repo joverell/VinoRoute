@@ -43,6 +43,7 @@ export default function HomePage() {
   const [clickedPoi, setClickedPoi] = useState<ClickedPoi | null>(null);
   const [prepopulatedStop, setPrepopulatedStop] = useState<PrepopulatedStop | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [savedTours, setSavedTours] = useState<SavedTour[]>([]);
   const [showRegionOverlay, setShowRegionOverlay] = useState(false);
   const [filterMode, setFilterMode] = useState<'region' | 'state' | 'country'>('region');
@@ -69,7 +70,20 @@ export default function HomePage() {
   }, [isLoaded]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => { setUser(currentUser); });
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        try {
+          const idTokenResult = await currentUser.getIdTokenResult(true);
+          setIsAdmin(!!idTokenResult.claims.isAdmin);
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
     return () => unsubscribe();
   }, []);
 
@@ -476,6 +490,7 @@ export default function HomePage() {
     <div className="flex flex-col w-screen h-screen">
       <Banner
         user={user}
+        isAdmin={isAdmin}
         showRegionOverlay={showRegionOverlay}
         onToggleRegionOverlay={() => setShowRegionOverlay(!showRegionOverlay)}
       />

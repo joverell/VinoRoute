@@ -2,23 +2,18 @@
 
 import { auth } from '@/utils/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
-import { useAdmin } from '@/hooks/useAdmin';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 interface AuthProps {
   user: User | null;
+  isAdmin: boolean;
 }
 
-export default function Auth({ user }: AuthProps) {
-  const isAdmin = useAdmin(user);
-  const router = useRouter();
-
+export default function Auth({ user, isAdmin }: AuthProps) {
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      router.refresh(); // Force a refresh to re-evaluate admin status
     } catch (error) {
       console.error("Error signing in with Google: ", error);
     }

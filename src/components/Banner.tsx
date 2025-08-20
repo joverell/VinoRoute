@@ -6,6 +6,7 @@ import Image from 'next/image';
 
 interface BannerProps {
   user: User | null;
+  isAdmin: boolean;
   showRegionOverlay?: boolean;
   onToggleRegionOverlay?: () => void;
   showMapOptions?: boolean;
@@ -13,6 +14,7 @@ interface BannerProps {
 
 const Banner = ({
   user,
+  isAdmin,
   showRegionOverlay,
   onToggleRegionOverlay,
   showMapOptions = true,
@@ -46,7 +48,7 @@ const Banner = ({
             <div className="border-l border-gray-600 h-10 mx-4"></div>
           </>
         )}
-        <Auth user={user} />
+        <Auth user={user} isAdmin={isAdmin} />
       </div>
     </div>
   );
