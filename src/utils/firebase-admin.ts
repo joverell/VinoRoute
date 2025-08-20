@@ -10,7 +10,7 @@ const initializeFirebaseAdmin = () => {
           privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
         }),
         databaseURL: `https://vinoroute-e8d8d.firebaseio.com`,
-        storageBucket: `${process.env.FIREBASE_PROJECT_ID}.appspot.com`,
+        storageBucket: 'vinoroute-e8d8d.appspot.com',
       });
     } catch (error) {
       console.error('Firebase admin initialization error', error);
