@@ -40,7 +40,14 @@ export interface Winery {
   locationType?: LocationType;
   region: string;
   openingHours: { [key: number]: { open: number; close: number } | null };
-  address?: string;
+  address?: {
+    street_number?: string;
+    suburb?: string;
+    country?: string;
+    postcode?: string;
+    state?: string;
+    street?: string;
+  };
   state?: string;
   url?: string;
   averageRating?: number;
