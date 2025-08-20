@@ -71,6 +71,22 @@ export default function HomePage() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (selectedWinery) {
+      document.title = `${selectedWinery.name} - ${selectedWinery.region} | VinoRoute`;
+    } else if (selectedRegion) {
+      let titlePart = '';
+      if (filterMode === 'country') {
+        titlePart = 'Australia';
+      } else if (filterMode === 'state') {
+        titlePart = selectedRegion.state;
+      } else {
+        titlePart = selectedRegion.name;
+      }
+      document.title = `${titlePart} | VinoRoute`;
+    }
+  }, [selectedRegion, selectedWinery, filterMode]);
+
   const handleLoadTour = useCallback((tour: SavedTour, locations: Winery[], allRegions: Region[]) => {
     const loadedStops = tour.stops.map(stop => {
       const winery = stop.customData 
