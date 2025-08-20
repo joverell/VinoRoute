@@ -94,10 +94,34 @@ async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, 
       }
   }
 
-  const type: 'winery' | 'distillery' = details.types?.includes('winery') ? 'winery' : 'distillery';
-  const locationType = locationTypes.find(lt => lt.name.toLowerCase() === type);
+  let locationType: LocationType | undefined;
+  if (details.types) {
+    for (const type of locationTypes) {
+      if (details.types.includes(type.name.toLowerCase())) {
+        locationType = type;
+        break;
+      }
+    }
+  }
 
-  const newLocationData = {
+  if (!locationType) {
+    console.log(`Skipping ${details.name} as it does not match any known location types.`);
+    return null;
+  }
+
+  const newLocationData: {
+    id: string;
+    name: string;
+    coords: { lat: number; lng: number };
+    address: string;
+    website: string;
+    phone: string;
+    region: string;
+    type: string;
+    openingHours: { [key: number]: { open: number; close: number } | null };
+    tags: string[];
+    locationTypeId?: string;
+  } = {
     id: placeId,
     name: details.name,
     coords: {
@@ -108,11 +132,14 @@ async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, 
     website: details.website || '',
     phone: details.formatted_phone_number || '',
     region: region,
-    type: type,
+    type: locationType.name,
     openingHours: details.opening_hours || {},
     tags: details.types || [],
-    locationTypeId: locationType?.id || undefined,
   };
+
+  if (locationType.id) {
+    newLocationData.locationTypeId = locationType.id;
+  }
 
   await db.collection('locations').doc(placeId).set(newLocationData);
   console.log(`Added ${details.name} to the database.`);
