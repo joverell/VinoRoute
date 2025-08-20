@@ -479,7 +479,7 @@ export default function HomePage() {
     }
 
     const typeMatch = locationTypeFilters.length === 0 ||
-      locationTypeFilters.includes(w.locationTypeId) ||
+      (w.locationTypeId && locationTypeFilters.includes(w.locationTypeId)) ||
       (!w.locationTypeId && w.type && locationTypeFilters.some(filterId => {
         const selectedLocationType = locationTypes.find(lt => lt.id === filterId);
         return selectedLocationType && w.type.toLowerCase() === selectedLocationType.singular.toLowerCase();
