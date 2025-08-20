@@ -155,7 +155,7 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Location Types</h2>
+      <h2 className="text-2xl font-semibold mb-4">Location Types ({locationTypes.length})</h2>
 
       {isAdding || isEditing ? (
         <form onSubmit={isEditing ? handleUpdate : handleAdd} className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">

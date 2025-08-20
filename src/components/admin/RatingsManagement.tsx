@@ -103,7 +103,7 @@ const RatingsManagement = ({ user }: RatingsManagementProps) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Ratings & Comments</h2>
+      <h2 className="text-2xl font-semibold mb-4">Ratings & Comments ({ratings.length})</h2>
       <div className="space-y-4">
         {ratings.map(rating => (
           <div key={rating.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">

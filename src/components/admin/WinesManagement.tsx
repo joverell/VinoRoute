@@ -135,7 +135,7 @@ export default function WinesManagement({ user }: WinesManagementProps) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Wines Management</h2>
+        <h2 className="text-2xl font-semibold">Wines Management ({wines.length})</h2>
         <button onClick={() => openModal(null)} className="px-4 py-2 bg-green-500 text-white font-bold rounded-md hover:bg-green-600">
           Add Wine
         </button>

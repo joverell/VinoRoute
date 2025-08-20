@@ -544,7 +544,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     {regions.map(r => (
                       <div key={getRegionDocId(r.name)} className="border-t pt-4">
                         <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleRegion(r.name)}>
-                          <h3 className="text-xl font-semibold text-coral-500">{r.name}</h3>
+                          <h3 className="text-xl font-semibold text-coral-500">{r.name} ({locations.filter(loc => loc.region === r.name).length})</h3>
                           <div className="space-x-2 flex items-center">
                             <button onClick={(e) => { e.stopPropagation(); setEditingRegion({ ...r }) }} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
                             <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r) }} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
