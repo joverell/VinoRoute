@@ -55,33 +55,41 @@ export default function WinerySearch({ regions, onAddWinery, user }: WinerySearc
   };
 
   return (
-    <div>
-      <h2>Search for New Wineries</h2>
-      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Search for New Wineries</h2>
+      <div className="flex gap-2 items-center">
         <select
           value={selectedRegion?.name}
           onChange={(e) => setSelectedRegion(regions.find(r => r.name === e.target.value))}
+          className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
         >
           {regions.map(r => <option key={r.name} value={r.name}>{r.name}</option>)}
         </select>
-        <button onClick={handleSearch} disabled={isSearching || !selectedRegion}>
+        <button
+          onClick={handleSearch}
+          disabled={isSearching || !selectedRegion}
+          className="px-4 py-2 bg-coral-500 text-white font-bold rounded-md hover:bg-coral-600 disabled:bg-gray-400"
+        >
           {isSearching ? 'Searching...' : 'Search'}
         </button>
       </div>
 
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {error && <p className="text-red-500">Error: {error}</p>}
 
       {searchResults.length > 0 && (
         <div>
-          <h3>Found {searchResults.length} new potential wineries:</h3>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <h3 className="text-lg font-semibold mb-2">Found {searchResults.length} new potential wineries:</h3>
+          <ul className="space-y-2">
             {searchResults.map((winery, index) => (
-              <li key={index} style={{ border: '1px solid #eee', padding: '10px', marginBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <li key={index} className="border dark:border-gray-700 p-3 rounded-md flex justify-between items-center">
                 <div>
-                  <strong>{winery.name}</strong>
-                  <p style={{ margin: '5px 0 0', color: '#555' }}>{winery.address}</p>
+                  <strong className="font-semibold">{winery.name}</strong>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{winery.address}</p>
                 </div>
-                <button onClick={() => onAddWinery(winery)}>
+                <button
+                  onClick={() => onAddWinery(winery)}
+                  className="px-3 py-1 bg-green-500 text-white font-bold rounded-md hover:bg-green-600"
+                >
                   Add
                 </button>
               </li>
@@ -91,7 +99,7 @@ export default function WinerySearch({ regions, onAddWinery, user }: WinerySearc
       )}
 
       {searchResults.length === 0 && !isSearching && (
-        <p>No new wineries found in the selected region.</p>
+        <p className="text-gray-500 dark:text-gray-400">No new wineries found in the selected region.</p>
       )}
     </div>
   );

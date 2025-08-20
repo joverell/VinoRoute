@@ -7,6 +7,7 @@ import WinerySearch from '@/components/WinerySearch';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';
 import RatingsManagement from '@/components/admin/RatingsManagement';
 import UserManagement from '@/components/admin/UserManagement';
+import WinesManagement from '@/components/admin/WinesManagement';
 
 interface AdminPageClientProps {
   user: User | null;
@@ -368,12 +369,15 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                 <button onClick={() => setActiveTab('users')} className={`${activeTab === 'users' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
                   User Management
                 </button>
+                <button onClick={() => setActiveTab('wines')} className={`${activeTab === 'wines' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                  Wines
+                </button>
               </nav>
             </div>
 
             {activeTab === 'regions' && (
               <div className={`grid grid-cols-1 ${selectedLocationForWines ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-8`}>
-                <div className="lg:col-span-1 space-y-8">
+                <div className="lg:col-span-1 space-y-8 self-start sticky top-8">
                   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
                       <h2 className="text-2xl font-semibold mb-4">Search for Winery</h2>
                       <WinerySearch regions={regions} onAddWinery={handleWinerySearchAdd} user={user} />
@@ -447,7 +451,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                   </div>
                 </div>
                 {selectedLocationForWines && (
-                  <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                  <div className="lg:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 self-start sticky top-8">
                     <h2 className="text-2xl font-semibold mb-4">Manage Wines for {selectedLocationForWines.name}</h2>
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold mb-2">Add New Wine</h3>
@@ -483,6 +487,10 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
 
             {activeTab === 'users' && (
               <UserManagement user={user} />
+            )}
+
+            {activeTab === 'wines' && (
+              <WinesManagement user={user} />
             )}
 
             {editingRegion && (
