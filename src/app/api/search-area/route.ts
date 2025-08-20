@@ -97,7 +97,8 @@ async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, 
   let locationType: LocationType | undefined;
   if (details.types) {
     for (const type of locationTypes) {
-      if (details.types.includes(type.name.toLowerCase())) {
+      // Check if any of the Google-provided types match the singular name of our location types
+      if (details.types.includes(type.singular.toLowerCase())) {
         locationType = type;
         break;
       }
@@ -132,7 +133,7 @@ async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, 
     website: details.website || '',
     phone: details.formatted_phone_number || '',
     region: region,
-    type: locationType.name,
+    type: locationType.singular,
     openingHours: details.opening_hours || {},
     tags: details.types || [],
   };
@@ -170,10 +171,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing bounds' }, { status: 400 });
     }
 
-    const locationTypesSnapshot = await db.collection('location-types').get();
-    const locationTypes = locationTypesSnapshot.docs.map(doc => {
-        const data = doc.data() as { name: string; mapImageUrl: string };
-        return { id: doc.id, ...data };
+    const locationTypesSnapshot = await db.collection('location_types').get();
+    const locationTypes: LocationType[] = locationTypesSnapshot.docs.map(doc => {
+        const data = doc.data() as { singular: string; plural: string, icon?: string };
+        return {
+          id: doc.id,
+          singular: data.singular,
+          plural: data.plural,
+          icon: data.icon
+        };
     });
 
     const [wineries, distilleries] = await Promise.all([
