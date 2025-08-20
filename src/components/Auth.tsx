@@ -4,6 +4,7 @@ import { auth } from '@/utils/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
 import { useAdmin } from '@/hooks/useAdmin';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface AuthProps {
   user: User | null;
@@ -11,11 +12,13 @@ interface AuthProps {
 
 export default function Auth({ user }: AuthProps) {
   const isAdmin = useAdmin(user);
+  const router = useRouter();
 
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
+      router.refresh(); // Force a refresh to re-evaluate admin status
     } catch (error) {
       console.error("Error signing in with Google: ", error);
     }
@@ -30,7 +33,7 @@ export default function Auth({ user }: AuthProps) {
   };
 
   return (
-    <div className="p-4">
+    <div>
       {user ? (
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">Welcome, {user.displayName}</span>

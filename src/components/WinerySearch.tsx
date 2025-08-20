@@ -56,7 +56,6 @@ export default function WinerySearch({ regions, onAddWinery, user }: WinerySearc
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Search for New Wineries</h2>
       <div className="flex gap-2 items-center">
         <select
           value={selectedRegion?.name}
