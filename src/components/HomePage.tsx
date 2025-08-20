@@ -14,6 +14,7 @@ import { db, auth } from '@/utils/firebase';
 import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';
+import { PotentialLocation } from '@/app/api/search-area/route';
 
 export interface TripStop {
   winery: Winery;
@@ -55,6 +56,8 @@ export default function HomePage() {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [currentMapBounds, setCurrentMapBounds] = useState<google.maps.LatLngBounds | null>(null);
+  const [potentialLocations, setPotentialLocations] = useState<PotentialLocation[]>([]);
+  const [isAddingNewLocations, setIsAddingNewLocations] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -340,6 +343,34 @@ export default function HomePage() {
     }
   };
 
+  const handleAddSelectedLocations = async (selectedLocations: PotentialLocation[]) => {
+    setIsAddingNewLocations(true);
+    try {
+      const addedLocations: Winery[] = [];
+      for (const loc of selectedLocations) {
+        const response = await fetch('/api/admin/add-location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId: loc.placeId, searchType: loc.searchType }),
+        });
+        if (response.ok) {
+          const newLocation = await response.json();
+          addedLocations.push(newLocation);
+        } else {
+          console.error(`Failed to add location: ${loc.name}`);
+        }
+      }
+      setAllLocations(prev => [...prev, ...addedLocations]);
+      setPotentialLocations([]);
+      alert(`Successfully added ${addedLocations.length} new locations!`);
+    } catch (error) {
+      console.error("Error adding selected locations:", error);
+      alert("An error occurred while adding new locations.");
+    } finally {
+      setIsAddingNewLocations(false);
+    }
+  };
+
   const handleSaveTour = async () => {
     if (!user) {
       alert("Please login to save your tour.");
@@ -451,12 +482,11 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bounds: currentMapBounds.toJSON() }),
       });
-      const newLocations = await response.json();
+      const newLocations: PotentialLocation[] = await response.json();
       if (newLocations.length > 0) {
-        setAllLocations(prevLocations => [...prevLocations, ...newLocations]);
-        alert(`Found ${newLocations.length} new locations!`);
+        setPotentialLocations(newLocations);
       } else {
-        alert("No new locations found in this area.");
+        alert("No new potential locations found in this area.");
       }
     } catch (error) {
       console.error("Error searching this area:", error);
@@ -544,6 +574,10 @@ export default function HomePage() {
           onSearchTermChange={setSearchTerm}
           searchTags={searchTags}
           onTagFilterChange={handleTagFilterChange}
+          potentialLocations={potentialLocations}
+          onAddPotentialLocations={handleAddSelectedLocations}
+          onClearPotentialLocations={() => setPotentialLocations([])}
+          isAddingPotentialLocations={isAddingNewLocations}
         />
         <div className="flex-grow h-full">
           <MapComponent

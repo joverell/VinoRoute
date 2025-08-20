@@ -4,6 +4,13 @@ import { Winery, LocationType } from '@/types';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
+export interface PotentialLocation {
+    placeId: string;
+    name: string;
+    address: string;
+    searchType: string;
+}
+
 interface GooglePlace {
   place_id: string;
   name: string;
@@ -44,127 +51,6 @@ async function isLocationNew(db: FirebaseFirestore.Firestore, placeId: string): 
   return !doc.exists;
 }
 
-async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, locationTypes: LocationType[], searchType: string): Promise<Winery | null> {
-  const placeId = place.place_id;
-  if (!placeId) {
-    console.error('Missing place_id for place:', place.name);
-    return null;
-  }
-
-  const fields = 'name,geometry,formatted_address,website,formatted_phone_number,opening_hours,types,business_status';
-  const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
-
-  const detailsResponse = await fetch(detailsUrl);
-  const detailsData = await detailsResponse.json();
-
-  if (detailsData.status !== 'OK' || !detailsData.result) {
-    console.error(`Error fetching details for ${place.name}:`, detailsData.status, detailsData.error_message);
-    return null;
-  }
-
-  const details = detailsData.result;
-
-  if (details.business_status !== 'OPERATIONAL') {
-    console.log(`Skipping non-operational place: ${details.name}`);
-    return null;
-  }
-
-  // Reverse geocode to get state and a better region
-  const reverseGeocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${details.geometry.location.lat},${details.geometry.location.lng}&key=${GOOGLE_MAPS_API_KEY}`;
-  const reverseGeocodeResponse = await fetch(reverseGeocodeUrl);
-  const reverseGeocodeData = await reverseGeocodeResponse.json();
-
-  let state = 'Unknown';
-  let stateAbbr = 'Unknown';
-  if (reverseGeocodeData.status === 'OK' && reverseGeocodeData.results[0]) {
-    const addressComponents = reverseGeocodeData.results[0].address_components as AddressComponent[];
-    const stateComponent = addressComponents.find((c: AddressComponent) => c.types.includes('administrative_area_level_1'));
-    if (stateComponent) {
-      state = stateComponent.long_name;
-      stateAbbr = stateComponent.short_name;
-    }
-  }
-
-  let region = place.vicinity || 'Unknown';
-  if (reverseGeocodeData.status === 'OK' && reverseGeocodeData.results[0]) {
-      const addressComponents = reverseGeocodeData.results[0].address_components as AddressComponent[];
-      const localityComponent = addressComponents.find((c: AddressComponent) => c.types.includes('locality'));
-      if (localityComponent) {
-          region = `${localityComponent.long_name}, ${stateAbbr}`;
-      }
-  }
-
-  let locationType: LocationType | undefined;
-
-  // First, try to find the location type based on the search query that found this place
-  if (searchType) {
-    locationType = locationTypes.find(lt => lt.singular.toLowerCase() === searchType.toLowerCase());
-  }
-
-  // If not found by search type, try to infer from Google's types (fallback)
-  if (!locationType && details.types) {
-    for (const type of locationTypes) {
-      // Check if any of the Google-provided types match the singular name of our location types
-      if (details.types.includes(type.singular.toLowerCase())) {
-        locationType = type;
-        break;
-      }
-    }
-  }
-
-  if (!locationType) {
-    console.log(`Skipping ${details.name} as it does not match any known location types.`);
-    return null;
-  }
-
-  const newLocationData: {
-    id: string;
-    name: string;
-    coords: { lat: number; lng: number };
-    address: string;
-    website: string;
-    phone: string;
-    region: string;
-    type: 'winery' | 'distillery' | 'custom';
-    openingHours: { [key: number]: { open: number; close: number } | null };
-    tags: string[];
-    locationTypeId?: string;
-  } = {
-    id: placeId,
-    name: details.name,
-    coords: {
-      lat: details.geometry.location.lat,
-      lng: details.geometry.location.lng,
-    },
-    address: details.formatted_address,
-    website: details.website || '',
-    phone: details.formatted_phone_number || '',
-    region: region,
-    type: locationType.singular as 'winery' | 'distillery' | 'custom',
-    openingHours: details.opening_hours || {},
-    tags: details.types || [],
-  };
-
-  if (locationType.id) {
-    newLocationData.locationTypeId = locationType.id;
-  }
-
-  await db.collection('locations').doc(placeId).set(newLocationData);
-  console.log(`Added ${details.name} to the database.`);
-
-  const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
-  const fullStateName = stateMap[stateAbbr] || state;
-
-  const finalWineryObject: Winery = {
-      ...newLocationData,
-      state: fullStateName,
-      locationType: locationType || undefined,
-  };
-
-  return finalWineryObject;
-}
-
-
 export async function POST(req: NextRequest) {
   try {
     const { adminDb: db } = initializeFirebaseAdmin();
@@ -192,27 +78,29 @@ export async function POST(req: NextRequest) {
     const searchTasks = locationTypes.map(lt => searchPlacesInBounds(bounds, lt.singular.toLowerCase()));
     const searchResults = await Promise.all(searchTasks);
 
-    const newLocations: Winery[] = [];
+    const potentialLocations: PotentialLocation[] = [];
     const seenPlaceIds = new Set<string>();
 
     for (let i = 0; i < searchResults.length; i++) {
-      const places = searchResults[i];
-      const searchType = locationTypes[i].singular;
+        const places = searchResults[i];
+        const searchType = locationTypes[i].singular;
 
-      for (const place of places) {
-        if (place.place_id && !seenPlaceIds.has(place.place_id)) {
-          seenPlaceIds.add(place.place_id);
-          if (await isLocationNew(db, place.place_id)) {
-            const newLocation = await addLocation(db, place, locationTypes, searchType);
-            if (newLocation) {
-              newLocations.push(newLocation);
+        for (const place of places) {
+            if (place.place_id && !seenPlaceIds.has(place.place_id)) {
+                seenPlaceIds.add(place.place_id);
+                if (await isLocationNew(db, place.place_id)) {
+                    potentialLocations.push({
+                        placeId: place.place_id,
+                        name: place.name,
+                        address: place.vicinity || 'Address not available',
+                        searchType: searchType,
+                    });
+                }
             }
-          }
         }
-      }
     }
 
-    return NextResponse.json(newLocations);
+    return NextResponse.json(potentialLocations);
   } catch (error) {
     console.error('Error in search-area API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
