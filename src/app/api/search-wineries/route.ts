@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { Client, Place, TextSearchRequest } from '@googlemaps/google-maps-services-js';
-import { Winery } from '@/types';
 
 export async function GET(request: Request) {
   try {

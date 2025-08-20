@@ -179,6 +179,7 @@ export default function Sidebar({
                   <label className="block text-sm font-medium text-gray-700">Type</label>
                   <div className="mt-2 space-y-2">
                     {locationTypes.map(lt => (
+
                       <div key={lt.id} className="flex items-center">
                         <input
                           id={`location-type-${lt.id}`}

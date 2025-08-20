@@ -83,7 +83,7 @@ export default function WinerySearch({ regions, onAddWinery, user }: WinerySearc
               <li key={index} className="border dark:border-gray-700 p-3 rounded-md flex justify-between items-center">
                 <div>
                   <strong className="font-semibold">{winery.name}</strong>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{winery.address}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{typeof winery.address === 'string' ? winery.address : ''}</p>
                 </div>
                 <button
                   onClick={() => onAddWinery(winery)}

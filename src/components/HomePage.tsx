@@ -478,10 +478,10 @@ export default function HomePage() {
       regionMatch = w.region === selectedRegion?.name;
     }
 
-    const selectedLocationTypes = locationTypes.filter(lt => locationTypeFilters.includes(lt.id));
-    const typeMatch = locationTypeFilters.length === 0 ||
-                      (w.locationTypeId && locationTypeFilters.includes(w.locationTypeId)) ||
-                      (!w.locationTypeId && w.type && selectedLocationTypes.some(slt => slt.name.toLowerCase() === w.type.toLowerCase()));
+    const selectedLocationType = locationTypes.find(lt => lt.id === locationTypeFilter);
+    const typeMatch = locationTypeFilter === 'all' ||
+                      w.locationTypeId === locationTypeFilter ||
+                      (!w.locationTypeId && w.type && selectedLocationType && w.type.toLowerCase() === selectedLocationType.singular.toLowerCase());
 
     const searchMatch = searchTerm.length > 0
       ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || (w.tags && w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))

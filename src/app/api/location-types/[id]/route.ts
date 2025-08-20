@@ -3,6 +3,22 @@ import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { LocationType } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
+async function parseFormData(request: Request): Promise<{ fields: { [key: string]: string }; files: { [key: string]: File } }> {
+  const formData = await request.formData();
+  const fields: { [key: string]: string } = {};
+  const files: { [key: string]: File } = {};
+
+  for (const [key, value] of formData.entries()) {
+    if (value instanceof File) {
+      files[key] = value;
+    } else {
+      fields[key] = value;
+    }
+  }
+
+  return { fields, files };
+}
+
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } },
@@ -47,18 +63,34 @@ export async function PUT(
         plural,
     };
 
-    if (iconFile) {
-      if (existingData.icon) {
-        try {
-          // Extract the path from the storage URL
-          const oldIconUrl = new URL(existingData.icon);
-          const oldIconPath = decodeURIComponent(oldIconUrl.pathname).split('/o/')[1];
-          if (oldIconPath) {
+    if (files.icon) {
+      const iconFile = files.icon;
+      if (iconFile) {
+        if (existingData.icon) {
+          try {
+            const oldIconPath = decodeURIComponent(new URL(existingData.icon).pathname.split('/').slice(3).join('/'));
             await adminStorage.bucket().file(oldIconPath).delete();
           }
         } catch (e) {
           console.error("Failed to delete old icon:", e);
         }
+
+        const bucket = adminStorage.bucket();
+        const fileContent = Buffer.from(await iconFile.arrayBuffer());
+        const destination = `location-type-icons/${uuidv4()}-${iconFile.name}`;
+        const file = bucket.file(destination);
+
+        await file.save(fileContent, {
+          metadata: {
+            contentType: iconFile.type,
+          },
+        });
+
+        const [url] = await file.getSignedUrl({
+          action: 'read',
+          expires: '03-09-2491',
+        });
+        locationTypeData.icon = url;
       }
 
       const bucket = adminStorage.bucket();

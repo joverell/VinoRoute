@@ -118,7 +118,7 @@ async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, 
     website: string;
     phone: string;
     region: string;
-    type: string;
+    type: 'winery' | 'distillery' | 'custom';
     openingHours: { [key: number]: { open: number; close: number } | null };
     tags: string[];
     locationTypeId?: string;
@@ -133,7 +133,7 @@ async function addLocation(db: FirebaseFirestore.Firestore, place: GooglePlace, 
     website: details.website || '',
     phone: details.formatted_phone_number || '',
     region: region,
-    type: locationType.singular,
+    type: locationType.singular as 'winery' | 'distillery' | 'custom',
     openingHours: details.opening_hours || {},
     tags: details.types || [],
   };

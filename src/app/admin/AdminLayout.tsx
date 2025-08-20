@@ -12,17 +12,22 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const tokenResult = await currentUser.getIdTokenResult();
+        setIsAdmin(tokenResult.claims.admin === true);
+      } else {
+        setIsAdmin(false);
+      }
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
-
-  const dummyToggle = () => {};
 
   if (loading) {
     return <div>Loading...</div>;
@@ -30,7 +35,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
   return (
     <div>
-      <Banner user={user} showMapOptions={false} />
+      <Banner user={user} showMapOptions={false} isAdmin={isAdmin} />
       <div className="p-4">
         <Link href="/" className="text-blue-500 hover:underline mb-4 block">&larr; Back to Main Page</Link>
         {children(user)}
