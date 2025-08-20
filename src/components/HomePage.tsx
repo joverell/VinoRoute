@@ -49,7 +49,7 @@ export default function HomePage() {
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBoundsLiteral | null>(null); // <-- NEW STATE FOR BOUNDS
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [locationTypeFilter, setLocationTypeFilter] = useState('all');
+  const [locationTypeFilters, setLocationTypeFilters] = useState<string[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [currentMapBounds, setCurrentMapBounds] = useState<google.maps.LatLngBounds | null>(null);
@@ -162,7 +162,11 @@ export default function HomePage() {
               setTripStops(rehydratedStops);
               setStartTime(startTime);
               setDefaultDuration(defaultDuration || 60);
-              setLocationTypeFilter(locationTypeFilter || 'all');
+              if (typeof locationTypeFilter === 'string') {
+                setLocationTypeFilters(locationTypeFilter === 'all' ? [] : [locationTypeFilter]);
+              } else {
+                setLocationTypeFilters(locationTypeFilter || []);
+              }
               setFilterMode(filterMode || 'region');
               setSearchTerm(searchTerm || '');
               setSearchTags(searchTags || []);
@@ -194,14 +198,14 @@ export default function HomePage() {
       tripStops,
       startTime,
       selectedRegionName: selectedRegion?.name,
-      locationTypeFilter,
+      locationTypeFilters,
       filterMode,
       defaultDuration,
       searchTerm,
       searchTags,
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [tripStops, startTime, selectedRegion, locationTypeFilter, filterMode, defaultDuration, searchTerm, searchTags, allLocations, isInitialLoad]);
+  }, [tripStops, startTime, selectedRegion, locationTypeFilters, filterMode, defaultDuration, searchTerm, searchTags, allLocations, isInitialLoad]);
 
   useEffect(() => {
     if (user && allLocations.length > 0) {
@@ -412,6 +416,14 @@ export default function HomePage() {
     );
   };
 
+  const handleLocationTypeChange = (typeId: string) => {
+    setLocationTypeFilters(prevTypes =>
+      prevTypes.includes(typeId)
+        ? prevTypes.filter(t => t !== typeId)
+        : [...prevTypes, typeId]
+    );
+  };
+
   const handleSearchThisArea = async () => {
     if (!currentMapBounds) {
       alert("Map bounds not set yet. Please move the map first.");
@@ -452,10 +464,10 @@ export default function HomePage() {
       regionMatch = w.region === selectedRegion?.name;
     }
 
-    const selectedLocationType = locationTypes.find(lt => lt.id === locationTypeFilter);
-    const typeMatch = locationTypeFilter === 'all' ||
-                      w.locationTypeId === locationTypeFilter ||
-                      (!w.locationTypeId && w.type && selectedLocationType && w.type.toLowerCase() === selectedLocationType.name.toLowerCase());
+    const selectedLocationTypes = locationTypes.filter(lt => locationTypeFilters.includes(lt.id));
+    const typeMatch = locationTypeFilters.length === 0 ||
+                      (w.locationTypeId && locationTypeFilters.includes(w.locationTypeId)) ||
+                      (!w.locationTypeId && w.type && selectedLocationTypes.some(slt => slt.name.toLowerCase() === w.type.toLowerCase()));
 
     const searchMatch = searchTerm.length > 0
       ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || (w.tags && w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
@@ -508,8 +520,8 @@ export default function HomePage() {
           prepopulatedStop={prepopulatedStop}
           onClearPrepopulatedStop={() => setPrepopulatedStop(null)}
           filterMode={filterMode}
-          locationTypeFilter={locationTypeFilter}
-          onLocationTypeChange={setLocationTypeFilter}
+          locationTypeFilters={locationTypeFilters}
+          onLocationTypeChange={handleLocationTypeChange}
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
           searchTags={searchTags}
