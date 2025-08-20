@@ -50,11 +50,11 @@ export async function PUT(
     if (iconFile) {
       if (existingData.icon) {
         try {
-            const oldIconUrl = new URL(existingData.icon);
-            const oldIconPath = decodeURIComponent(oldIconUrl.pathname).split('/o/')[1];
-            if (oldIconPath) {
-                await adminStorage.bucket().file(oldIconPath).delete();
-            }
+          const oldIconUrl = new URL(existingData.icon);
+          const oldIconPath = decodeURIComponent(oldIconUrl.pathname).split('/o/')[1];
+          if (oldIconPath) {
+            await adminStorage.bucket().file(oldIconPath).delete();
+          }
         } catch (e) {
             console.error("Failed to delete old icon:", e);
         }
