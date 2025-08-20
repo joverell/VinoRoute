@@ -28,6 +28,7 @@ export interface LocationType {
   singular: string;
   plural: string;
   icon?: string;
+  mapImageUrl?: string;
 }
 
 // The Winery and Region interfaces remain the same
@@ -41,7 +42,7 @@ export interface Winery {
   locationType?: LocationType;
   region: string;
   openingHours: { [key: number]: { open: number; close: number } | null };
-  address?: {
+  address?: string | {
     street_number?: string;
     suburb?: string;
     country?: string;

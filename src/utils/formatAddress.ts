@@ -5,6 +5,10 @@ export const formatAddress = (address: Winery['address']): string => {
     return 'Address not available';
   }
 
+  if (typeof address === 'string') {
+    return address;
+  }
+
   const parts = [
     address.street_number,
     address.street,

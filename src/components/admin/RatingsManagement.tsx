@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Rating } from '@/types';
-import { auth } from '@/utils/firebase';
 import { User } from 'firebase/auth';
 
 interface RatingsManagementProps {

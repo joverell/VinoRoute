@@ -2,7 +2,7 @@
 
 import { GoogleMap, MarkerF, DirectionsRenderer, InfoWindowF, Polygon } from '@react-google-maps/api';
 import { Winery } from '@/types';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';

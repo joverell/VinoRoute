@@ -185,7 +185,7 @@ export default function Sidebar({
                   >
                     <option value="all">All Types</option>
                     {locationTypes.map(lt => (
-                      <option key={lt.id} value={lt.id}>{lt.name}s</option>
+                      <option key={lt.id} value={lt.id}>{lt.plural}</option>
                     ))}
                   </select>
                 </div>

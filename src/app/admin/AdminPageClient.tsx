@@ -665,7 +665,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                   <h2 className="text-2xl font-semibold mb-4">Edit Location</h2>
                   <form onSubmit={handleUpdateLocation} className="space-y-4">
                     <input type="text" placeholder="Name" value={editingLocation.name} onChange={e => setEditingLocation({...editingLocation, name: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
-                    <input type="text" placeholder="Address" value={editingLocation.address} onChange={e => setEditingLocation({...editingLocation, address: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
+                    <input type="text" placeholder="Address" value={typeof editingLocation.address === 'string' ? editingLocation.address : ''} onChange={e => setEditingLocation({...editingLocation, address: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
                     <select value={editingLocation.region} onChange={e => setEditingLocation({...editingLocation, region: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
                       {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
                     </select>

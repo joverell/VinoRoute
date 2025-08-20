@@ -469,7 +469,7 @@ export default function HomePage() {
     const selectedLocationType = locationTypes.find(lt => lt.id === locationTypeFilter);
     const typeMatch = locationTypeFilter === 'all' ||
                       w.locationTypeId === locationTypeFilter ||
-                      (!w.locationTypeId && w.type && selectedLocationType && w.type.toLowerCase() === selectedLocationType.name.toLowerCase());
+                      (!w.locationTypeId && w.type && selectedLocationType && w.type.toLowerCase() === selectedLocationType.singular.toLowerCase());
 
     const searchMatch = searchTerm.length > 0
       ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || (w.tags && w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))

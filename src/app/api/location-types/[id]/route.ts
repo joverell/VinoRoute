@@ -1,29 +1,22 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { LocationType } from '@/types';
-import formidable from 'formidable';
-import { promises as fs } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+async function parseFormData(request: Request): Promise<{ fields: { [key: string]: string }; files: { [key: string]: File } }> {
+  const formData = await request.formData();
+  const fields: { [key: string]: string } = {};
+  const files: { [key: string]: File } = {};
 
-async function parseFormData(request: Request) {
-  const form = formidable({});
-  const [fields, files] = await form.parse(request);
-
-  const typedFields: { [key: string]: string } = {};
-  for (const key in fields) {
-    const value = fields[key];
-    if (Array.isArray(value) && value.length > 0) {
-      typedFields[key] = value[0];
+  for (const [key, value] of formData.entries()) {
+    if (value instanceof File) {
+      files[key] = value;
+    } else {
+      fields[key] = value;
     }
   }
 
-  return { fields: typedFields, files };
+  return { fields, files };
 }
 
 export async function PUT(
@@ -67,7 +60,7 @@ export async function PUT(
     };
 
     if (files.icon) {
-      const iconFile = Array.isArray(files.icon) ? files.icon[0] : files.icon;
+      const iconFile = files.icon;
       if (iconFile) {
         if (existingData.icon) {
           try {
@@ -79,13 +72,13 @@ export async function PUT(
         }
 
         const bucket = adminStorage.bucket();
-        const fileContent = await fs.readFile(iconFile.filepath);
-        const destination = `location-type-icons/${uuidv4()}-${iconFile.originalFilename}`;
+        const fileContent = Buffer.from(await iconFile.arrayBuffer());
+        const destination = `location-type-icons/${uuidv4()}-${iconFile.name}`;
         const file = bucket.file(destination);
 
         await file.save(fileContent, {
           metadata: {
-            contentType: iconFile.mimetype,
+            contentType: iconFile.type,
           },
         });
 
