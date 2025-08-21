@@ -16,7 +16,13 @@ interface AdminPageClientProps {
   user: User | null;
 }
 
-const PlacesAutocomplete = ({ onAddressSelect }: { onAddressSelect: (address: string, lat: number, lng: number) => void }) => {
+interface PlacesAutocompleteProps {
+  onAddressSelect: (address: string, lat: number, lng: number) => void;
+  onAddressChange: (address: string) => void;
+  initialValue?: string;
+}
+
+const PlacesAutocomplete = ({ onAddressSelect, onAddressChange, initialValue }: PlacesAutocompleteProps) => {
   const {
     ready,
     value,
@@ -28,14 +34,17 @@ const PlacesAutocomplete = ({ onAddressSelect }: { onAddressSelect: (address: st
       componentRestrictions: { country: 'au' },
     },
     debounce: 300,
+    defaultValue: initialValue || '',
   });
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value);
+    onAddressChange(e.target.value);
   };
 
   const handleSelect = ({ description }: { description: string }) => () => {
     setValue(description, false);
+    onAddressChange(description);
     clearSuggestions();
 
     getGeocode({ address: description })
@@ -326,7 +335,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to delete location');
         setToast({ message: `Location "${location.name}" deleted.`, type: 'success' });
-        fetchData();
+        setLocations(locations.filter(l => l.id !== location.id));
     } catch (err) {
         if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
         else setToast({ message: 'An unknown error occurred.', type: 'error' });
@@ -398,7 +407,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to delete region');
         setToast({ message: `Region "${region.name}" deleted.`, type: 'success' });
-        fetchData();
+        setRegions(regions.filter(r => getRegionDocId(r.name) !== getRegionDocId(region.name)));
     } catch (err) {
         if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
         else setToast({ message: 'An unknown error occurred.', type: 'error' });
@@ -444,7 +453,18 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${token}` },
           });
-          fetchData();
+
+          const updatedLocations = locations.map(l => {
+            if (l.id === selectedLocationForWines.id) {
+              return {
+                ...l,
+                wines: l.wines?.filter(w => w.lwin !== wine.lwin)
+              };
+            }
+            return l;
+          });
+          setLocations(updatedLocations);
+
       } catch (err) {
           if (err instanceof Error) alert(`Error: ${err.message}`);
           else alert('An unknown error occurred.');
@@ -496,6 +516,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     <form onSubmit={handleAddWinery} className="space-y-4">
                       <input type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
                       <PlacesAutocomplete
+                        onAddressChange={setAddress}
                         onAddressSelect={(selectedAddress, lat, lng) => {
                           setAddress(selectedAddress);
                           setCoords({ lat, lng });
@@ -665,7 +686,23 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                   <h2 className="text-2xl font-semibold mb-4">Edit Location</h2>
                   <form onSubmit={handleUpdateLocation} className="space-y-4">
                     <input type="text" placeholder="Name" value={editingLocation.name} onChange={e => setEditingLocation({...editingLocation, name: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
-                    <input type="text" placeholder="Address" value={typeof editingLocation.address === 'string' ? editingLocation.address : ''} onChange={e => setEditingLocation({...editingLocation, address: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
+                    <PlacesAutocomplete
+                      initialValue={typeof editingLocation.address === 'string' ? editingLocation.address : ''}
+                      onAddressChange={(newAddress) => {
+                        if (editingLocation) {
+                            setEditingLocation({ ...editingLocation, address: newAddress });
+                        }
+                      }}
+                      onAddressSelect={(selectedAddress, lat, lng) => {
+                        if (editingLocation) {
+                            setEditingLocation({
+                                ...editingLocation,
+                                address: selectedAddress,
+                                coords: { lat, lng }
+                            });
+                        }
+                      }}
+                    />
                     <select value={editingLocation.region} onChange={e => setEditingLocation({...editingLocation, region: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
                       {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
                     </select>
@@ -676,7 +713,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     <input type="text" placeholder="Tags (comma-separated)" value={editingLocation.tags.join(', ')} onChange={e => setEditingLocation({...editingLocation, tags: e.target.value.split(',').map(t=>t.trim())})} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
                     <div className="flex justify-end space-x-4 pt-4">
                       <button type="button" onClick={() => setEditingLocation(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
-                      <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-coral-500 text-white font-bold rounded-md hover:bg-coral-600 disabled:bg-gray-400">
+                      <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-blue-500 text-white font-bold rounded-md hover:bg-blue-600 disabled:bg-gray-400 shadow-md">
                         {isSubmitting ? 'Updating...' : 'Update Location'}
                       </button>
                     </div>

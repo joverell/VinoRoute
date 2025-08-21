@@ -125,7 +125,7 @@ export default function WinesManagement({ user }: WinesManagementProps) {
             throw new Error(data.error || 'Failed to delete wine');
         }
 
-        await fetchData();
+        setWines(wines.filter(w => w.lwin !== wine.lwin));
     } catch (err) {
         if (err instanceof Error) setError(err.message);
         else setError('An unknown error occurred');
