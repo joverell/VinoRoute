@@ -107,6 +107,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   // Form state for region
   const [regionName, setRegionName] = useState('');
   const [regionState, setRegionState] = useState('');
+  const [regionCountry, setRegionCountry] = useState('');
   const [regionCenterLat, setRegionCenterLat] = useState('');
   const [regionCenterLng, setRegionCenterLng] = useState('');
 
@@ -353,6 +354,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
     setIsSubmitting(true);
     const newRegionData = {
         name: regionName, state: regionState,
+        country: regionCountry,
         center: { lat: parseFloat(regionCenterLat), lng: parseFloat(regionCenterLng) },
     };
     try {
@@ -365,7 +367,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to add region');
         setToast({ message: `Region "${regionName}" added.`, type: 'success' });
-        setRegionName(''); setRegionState(''); setRegionCenterLat(''); setRegionCenterLng('');
+        setRegionName(''); setRegionState(''); setRegionCountry(''); setRegionCenterLat(''); setRegionCenterLng('');
         fetchData();
     } catch (err) {
         if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
@@ -548,6 +550,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     <form onSubmit={handleAddRegion} className="space-y-4">
                       <input type="text" placeholder="Region Name" value={regionName} onChange={e => setRegionName(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
                       <input type="text" placeholder="State" value={regionState} onChange={e => setRegionState(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
+                      <input type="text" placeholder="Country" value={regionCountry} onChange={e => setRegionCountry(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
                       <div className="flex space-x-2">
                         <input type="number" step="any" placeholder="Center Latitude" value={regionCenterLat} onChange={e => setRegionCenterLat(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
                         <input type="number" step="any" placeholder="Center Longitude" value={regionCenterLng} onChange={e => setRegionCenterLng(e.target.value)} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
@@ -590,7 +593,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                       return (
                         <div key={getRegionDocId(r.name)} className="border-t pt-4">
                           <div className="flex justify-between items-center cursor-pointer" onClick={() => toggleRegion(r.name)}>
-                            <h3 className="text-xl font-semibold text-coral-500">{r.name} ({filteredLocations.length})</h3>
+                            <h3 className="text-xl font-semibold text-coral-500">{r.name}, {r.country} ({filteredLocations.length})</h3>
                             <div className="space-x-2 flex items-center">
                               <button onClick={(e) => { e.stopPropagation(); setEditingRegion({ ...r }) }} className="px-3 py-1 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600">Edit</button>
                               <button onClick={(e) => { e.stopPropagation(); handleDeleteRegion(r) }} className="px-3 py-1 text-sm bg-red-500 text-white rounded-md hover:bg-red-600">Delete</button>
@@ -677,6 +680,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                   <form onSubmit={handleUpdateRegion} className="space-y-4">
                     <input type="text" value={editingRegion.name} disabled className="mt-1 w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 border rounded-md" />
                     <input type="text" value={editingRegion.state} onChange={e => setEditingRegion({ ...editingRegion, state: e.target.value })} required className="mt-1 w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
+                    <input type="text" value={editingRegion.country} onChange={e => setEditingRegion({ ...editingRegion, country: e.target.value })} required className="mt-1 w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md" />
                     <div className="flex space-x-2">
                       <input type="number" step="any" value={editingRegion.center.lat} onChange={e => setEditingRegion({ ...editingRegion, center: { ...editingRegion.center, lat: parseFloat(e.target.value) } })} required className="mt-1 w-full px-4 py-2 bg-gray-50" />
                       <input type="number" step="any" value={editingRegion.center.lng} onChange={e => setEditingRegion({ ...editingRegion, center: { ...editingRegion.center, lng: parseFloat(e.target.value) } })} required className="mt-1 w-full px-4 py-2 bg-gray-50" />
