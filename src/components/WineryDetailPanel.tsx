@@ -14,8 +14,7 @@ interface WineryDetailPanelProps {
 export default function WineryDetailPanel({ winery, onClearSelection, onAddToTrip, onRemoveFromTrip, isInTrip, user }: WineryDetailPanelProps) {
   return (
     <div className="w-full sm:w-96 bg-white shadow-lg p-4 overflow-y-auto z-20 flex-shrink-0 h-full">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">{winery.name}</h2>
+      <div className="flex justify-end items-center mb-4">
         <button
           onClick={onClearSelection}
           className="p-2 text-gray-500 hover:text-gray-700"
