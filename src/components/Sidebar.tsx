@@ -9,8 +9,6 @@ import { SavedTour } from '@/types';
 import AddCustomStopForm from './AddCustomStopForm';
 import { Region } from '@/types';
 import { User } from 'firebase/auth';
-import PotentialLocationsPanel from './admin/PotentialLocationsPanel';
-import { PotentialLocation } from '@/app/api/search-area/route';
 
 const getNextSaturday10AM = () => {
   const now = new Date();
@@ -71,10 +69,6 @@ interface SidebarProps {
   onSearchTermChange: (term: string) => void;
   searchTags: string[];
   onTagFilterChange: (tag: string) => void;
-  potentialLocations: PotentialLocation[];
-  onAddPotentialLocations: (locations: PotentialLocation[]) => void;
-  onClearPotentialLocations: () => void;
-  isAddingPotentialLocations: boolean;
 }
 
 export default function Sidebar({
@@ -86,8 +80,7 @@ export default function Sidebar({
   availableWineries, regions, locationTypes, prepopulatedStop, onClearPrepopulatedStop,
   filterMode,
   locationTypeFilters, onLocationTypeChange,
-  searchTerm, onSearchTermChange, searchTags, onTagFilterChange,
-  potentialLocations, onAddPotentialLocations, onClearPotentialLocations, isAddingPotentialLocations
+  searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
@@ -294,13 +287,6 @@ export default function Sidebar({
               <p className="mt-2 text-xs text-center text-gray-400">Drag and drop to reorder your tour.</p>
             </div>
           )}
-
-          <PotentialLocationsPanel
-            locations={potentialLocations}
-            onAddLocations={onAddPotentialLocations}
-            onClear={onClearPotentialLocations}
-            isAdding={isAddingPotentialLocations}
-          />
 
           <div>
             <>

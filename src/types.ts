@@ -42,7 +42,7 @@ export interface Winery {
   name: string;
   coords: { lat: number; lng: number };
   tags: string[];
-  type: 'winery' | 'distillery' | 'custom'; // This will be deprecated
+  type: 'winery' | 'distillery' | 'custom' | 'potential'; // This will be deprecated
   locationTypeId?: string;
   locationType?: LocationType;
   region: string;

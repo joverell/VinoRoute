@@ -3,6 +3,7 @@
 import { GoogleMap, MarkerF, DirectionsRenderer, InfoWindowF, Polygon } from '@react-google-maps/api';
 import { Winery } from '@/types';
 import { useEffect, useRef, useState } from 'react';
+import { formatAddress } from '@/utils/formatAddress';
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';
@@ -25,6 +26,9 @@ interface MapProps {
   onSearchThisArea: () => void;
   isSearching: boolean;
   potentialLocations?: PotentialLocation[];
+  onSelectPotentialLocation: (location: PotentialLocation) => void;
+  highlightedWinery: Winery | null;
+  selectedWinery: Winery | null;
 }
 
 const createNumberedIcon = (number: number, isLoaded: boolean, color = "#FF5757") => {
@@ -41,7 +45,8 @@ export default function MapComponent(props: MapProps) {
   const {
     isLoaded, itinerary, directions, onSelectWinery, availableWineries,
     selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay,
-    mapBounds, onBoundsChanged, onSearchThisArea, isSearching, potentialLocations = []
+    mapBounds, onBoundsChanged, onSearchThisArea, isSearching, potentialLocations = [],
+    onSelectPotentialLocation, highlightedWinery, selectedWinery
   } = props;
 
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -198,9 +203,28 @@ export default function MapComponent(props: MapProps) {
             position={coords}
             title={location.name}
             icon={createNumberedIcon(index + 1, isLoaded, "#4299E1")}
+            onClick={() => onSelectPotentialLocation(location)}
           />
         );
       })}
+
+      {highlightedWinery && (
+        <InfoWindowF
+          position={highlightedWinery.coords}
+          onCloseClick={() => onSelectWinery(null)}
+        >
+          <div className="p-2">
+            <h4 className="font-bold text-gray-800">{highlightedWinery.name}</h4>
+            <p className="text-sm text-gray-600">{formatAddress(highlightedWinery.address)}</p>
+            <button
+                onClick={() => onSelectWinery(highlightedWinery)}
+                className="w-full px-3 py-1 mt-2 text-sm font-bold text-white bg-rose-500 rounded-lg hover:bg-rose-600"
+            >
+              View Details
+            </button>
+          </div>
+        </InfoWindowF>
+      )}
 
       {clickedPoi && (
         <InfoWindowF

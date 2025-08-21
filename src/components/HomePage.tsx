@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import MapComponent from '@/components/Map';
 import Sidebar from '@/components/Sidebar';
 import WineryDetailPanel from '@/components/WineryDetailPanel';
+import SearchResultsPanel from '@/components/SearchResultsPanel';
 import { Winery, Region, SavedTour, LocationType } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
@@ -58,6 +59,8 @@ export default function HomePage() {
   const [currentMapBounds, setCurrentMapBounds] = useState<google.maps.LatLngBounds | null>(null);
   const [potentialLocations, setPotentialLocations] = useState<PotentialLocation[]>([]);
   const [isAddingNewLocations, setIsAddingNewLocations] = useState(false);
+  const [selectedPotentialLocation, setSelectedPotentialLocation] = useState<PotentialLocation | null>(null);
+  const [highlightedWinery, setHighlightedWinery] = useState<Winery | null>(null);
 
   const searchParams = useSearchParams();
 
@@ -343,6 +346,30 @@ export default function HomePage() {
     }
   };
 
+  const handleSelectPotentialLocation = (location: PotentialLocation) => {
+    setSelectedPotentialLocation(location);
+    if (geocoderRef.current) {
+        geocoderRef.current.geocode({ placeId: location.placeId }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+                const winery: Winery = {
+                    id: location.placeId,
+                    name: location.name,
+                    address: location.address,
+                    coords: {
+                        lat: results[0].geometry.location.lat(),
+                        lng: results[0].geometry.location.lng(),
+                    },
+                    type: 'potential',
+                    region: selectedRegion?.name || '',
+                    tags: [],
+                    openingHours: {},
+                };
+                setHighlightedWinery(winery);
+            }
+        });
+    }
+  };
+
   const handleAddSelectedLocations = async (selectedLocations: PotentialLocation[]) => {
     setIsAddingNewLocations(true);
     try {
@@ -574,10 +601,6 @@ export default function HomePage() {
           onSearchTermChange={setSearchTerm}
           searchTags={searchTags}
           onTagFilterChange={handleTagFilterChange}
-          potentialLocations={potentialLocations}
-          onAddPotentialLocations={handleAddSelectedLocations}
-          onClearPotentialLocations={() => setPotentialLocations([])}
-          isAddingPotentialLocations={isAddingNewLocations}
         />
         <div className="flex-grow h-full">
           <MapComponent
@@ -588,7 +611,13 @@ export default function HomePage() {
             availableWineries={availableWineries}
             selectedRegion={selectedRegion}
             clickedPoi={clickedPoi}
-            onMapClick={(poi) => setClickedPoi(poi)}
+            onMapClick={(poi) => {
+              setClickedPoi(poi);
+              if (!poi) {
+                setHighlightedWinery(null);
+                setSelectedPotentialLocation(null);
+              }
+            }}
             onAddPoiToTrip={handleAddPoiToTrip}
             showRegionOverlay={showRegionOverlay}
             mapBounds={mapBounds}
@@ -596,12 +625,33 @@ export default function HomePage() {
             onSearchThisArea={handleSearchThisArea}
             isSearching={isSearching}
             potentialLocations={potentialLocations}
+            onSelectPotentialLocation={handleSelectPotentialLocation}
+            highlightedWinery={highlightedWinery}
+            selectedWinery={selectedWinery}
           />
         </div>
+        {potentialLocations.length > 0 && (
+          <SearchResultsPanel
+            potentialLocations={potentialLocations}
+            onAddPotentialLocations={handleAddSelectedLocations}
+            onClearPotentialLocations={() => {
+              setPotentialLocations([]);
+              setHighlightedWinery(null);
+              setSelectedPotentialLocation(null);
+            }}
+            isAddingPotentialLocations={isAddingNewLocations}
+            onSelectPotentialLocation={handleSelectPotentialLocation}
+            selectedPotentialLocation={selectedPotentialLocation}
+          />
+        )}
         {selectedWinery && (
           <WineryDetailPanel
             winery={selectedWinery}
-            onClearSelection={() => setSelectedWinery(null)}
+            onClearSelection={() => {
+              setSelectedWinery(null);
+              setHighlightedWinery(null);
+              setSelectedPotentialLocation(null);
+            }}
             onAddToTrip={handleAddToTrip}
             onRemoveFromTrip={handleRemoveFromTrip}
             isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
