@@ -27,15 +27,30 @@ body {
 
 /* Joke of the Day styles */
 .joke-container {
-  background-color: #f0f0f0;
+  background-color: #1a1a1a;
+  color: #f0f0f0;
   padding: 1rem;
   text-align: center;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid #444;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
 }
 
 .joke-text {
   font-family: 'Georgia', serif;
   font-size: 1.2rem;
   font-style: italic;
-  color: #333;
+  margin: 0;
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.joke-text.fade-in {
+  opacity: 1;
+}
+
+.joke-text.fade-out {
+  opacity: 0;
 }
