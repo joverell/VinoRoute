@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     const token = authorization.split('Bearer ')[1];
     await adminAuth.verifyIdToken(token);
 
-    const { singular, plural, icon } = await request.json();
+    const { singular, plural, icon, mapImageUrl } = await request.json();
 
     if (!singular || !plural) {
       return NextResponse.json({ error: 'Invalid request body: singular and plural are required' }, { status: 400 });
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
       singular,
       plural,
       icon: icon || '',
+      mapImageUrl: mapImageUrl || icon || '',
     };
 
     const locationTypesCollection = adminDb.collection('location_types');
