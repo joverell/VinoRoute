@@ -87,14 +87,19 @@ export async function PUT(
     });
   } catch (error) {
     console.error(`Error updating location type ${id}:`, error);
-    if (error instanceof Error && "code" in error) {
-      const firebaseError = error as { code: string; message: string };
-      if (
-        firebaseError.code === "auth/id-token-expired" ||
-        firebaseError.code === "auth/argument-error"
-      ) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    if (error instanceof Error) {
+        if ("code" in error) {
+            const firebaseError = error as { code: string; message: string, errorInfo: object };
+            if (
+                firebaseError.code === "auth/id-token-expired" ||
+                firebaseError.code === "auth/argument-error"
+            ) {
+                return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            }
+        }
+        if (error.message.includes("does not exist")) {
+            return NextResponse.json({ error: "Storage bucket not found. Please check server configuration." }, { status: 500 });
+        }
     }
     return NextResponse.json(
       { error: "Internal Server Error" },
