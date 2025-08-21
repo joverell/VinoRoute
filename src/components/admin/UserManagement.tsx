@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { User as FirebaseUser } from 'firebase/auth';
+import { useToast } from '@/context/ToastContext';
 
 interface User {
   uid: string;
@@ -20,7 +21,7 @@ interface UserManagementProps {
 const UserManagement = ({ user }: UserManagementProps) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editedUser, setEditedUser] = useState<Partial<User> | null>(null);
 
@@ -40,26 +41,24 @@ const UserManagement = ({ user }: UserManagementProps) => {
         }
         const data = await response.json();
         setUsers(data);
-        setError(null);
       } catch (err) {
-        if (err instanceof Error) setError(err.message);
-        else setError('An unknown error occurred');
+        const message = err instanceof Error ? err.message : 'An unknown error occurred';
+        showToast(message, 'error', { operation: 'fetchUsers' });
       } finally {
         setLoading(false);
       }
     };
 
     fetchUsers();
-  }, [user]);
+  }, [user, showToast]);
 
   if (loading) return <div>Loading users...</div>;
-  if (error) return <div>Error: {error}</div>;
 
   const handleDelete = async (uid: string) => {
     if (!user || !confirm('Are you sure you want to delete this user? This action is irreversible.')) return;
 
     if (uid === user.uid) {
-      alert("You cannot delete your own account.");
+      showToast("You cannot delete your own account.", 'error');
       return;
     }
 
@@ -76,9 +75,10 @@ const UserManagement = ({ user }: UserManagementProps) => {
       }
 
       setUsers(users.filter(u => u.uid !== uid));
+      showToast('User deleted successfully.', 'success', { operation: 'handleDelete', uid });
     } catch (err) {
-        if (err instanceof Error) alert(`Error: ${err.message}`);
-        else alert('An unknown error occurred.');
+        const message = err instanceof Error ? err.message : 'An unknown error occurred';
+        showToast(message, 'error', { operation: 'handleDelete', uid });
     }
   };
 
@@ -115,10 +115,10 @@ const UserManagement = ({ user }: UserManagementProps) => {
       setUsers(users.map(u => u.uid === uid ? { ...u, ...editedUser } : u));
       setEditingUserId(null);
       setEditedUser(null);
-
+      showToast('User updated successfully.', 'success', { operation: 'handleUpdate', uid });
     } catch (err) {
-      if (err instanceof Error) alert(`Error: ${err.message}`);
-      else alert('An unknown error occurred.');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      showToast(message, 'error', { operation: 'handleUpdate', uid });
     }
   };
 

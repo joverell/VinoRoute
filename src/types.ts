@@ -100,3 +100,12 @@ export interface SavedTour {
   };
   itinerary?: SavedItineraryStop[];
 }
+
+export interface Message {
+  id: string;
+  text: string;
+  type: 'success' | 'error';
+  timestamp: { seconds: number; nanoseconds: number; } | Date;
+  userId?: string;
+  metadata?: Record<string, unknown>;
+}

@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { LocationType } from '@/types';
 import { User } from 'firebase/auth';
 import Image from 'next/image';
+import { useToast } from '@/context/ToastContext';
 import { storage } from '@/utils/firebase';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,7 +18,7 @@ interface LocationTypeManagementProps {
 const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
   const [locationTypes, setLocationTypes] = useState<LocationType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const [isEditing, setIsEditing] = useState<LocationType | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -42,14 +43,13 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       }
       const data = await response.json();
       setLocationTypes(data);
-      setError(null);
     } catch (err) {
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      showToast(message, 'error', { operation: 'fetchLocationTypes' });
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, showToast]);
 
   useEffect(() => {
     fetchLocationTypes();
@@ -62,6 +62,9 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
     let iconUrl = isEditing ? isEditing.icon : '';
     const oldIconUrl = isEditing ? isEditing.icon : null;
     let newIconUploaded = false;
+
+    const operation = isEditing ? 'update' : 'add';
+    const successMessage = `Location type ${operation === 'update' ? 'updated' : 'added'} successfully`;
 
     try {
       // If a new icon file is selected, upload it
@@ -92,6 +95,8 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `Failed to ${operation} location type` }));
+        throw new Error(errorData.error);
         // If the API call fails and we uploaded a new icon, delete it to prevent orphaned files.
         if (newIconUploaded) {
           const newIconRef = ref(storage, iconUrl);
@@ -114,11 +119,10 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
 
       await fetchLocationTypes();
       cancelForm();
-
+      showToast(successMessage, 'success', { operation: 'handleFormSubmit', isEditing });
     } catch (err) {
-      console.error("Form submission error:", err);
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      showToast(message, 'error', { operation: 'handleFormSubmit', isEditing });
     }
   };
 
@@ -137,8 +141,8 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete location type');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to delete location type' }));
+        throw new Error(errorData.error);
       }
 
       // If the location type was deleted from DB, delete the icon from storage
@@ -153,9 +157,10 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       }
 
       setLocationTypes(locationTypes.filter(lt => lt.id !== id));
+      showToast('Location type deleted successfully', 'success', { operation: 'handleDelete', id });
     } catch (err) {
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      showToast(message, 'error', { operation: 'handleDelete', id });
     }
   };
 
@@ -193,7 +198,6 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
   }
 
   if (loading) return <div>Loading location types...</div>;
-  if (error) return <div>Error: {error}</div>;
 
   return (
     <div>
