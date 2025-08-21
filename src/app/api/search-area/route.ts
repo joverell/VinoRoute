@@ -22,9 +22,9 @@ interface GooglePlace {
 async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, type: string): Promise<GooglePlace[]> {
   const { north, south, east, west } = bounds;
   const query = `${type}`;
-  const locationBias = `rectangle:${south},${west}|${north},${east}`;
+  const locationRestriction = `rectangle:${south},${west}|${north},${east}`;
 
-  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&locationbias=${encodeURIComponent(locationBias)}&key=${GOOGLE_MAPS_API_KEY}`;
+  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&locationrestriction=${encodeURIComponent(locationRestriction)}&key=${GOOGLE_MAPS_API_KEY}`;
 
   try {
     const response = await fetch(url);
