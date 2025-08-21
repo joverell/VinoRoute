@@ -17,6 +17,7 @@ This project uses Firebase for backend services. You'll need to configure your e
     FIREBASE_PROJECT_ID="your-project-id"
     FIREBASE_CLIENT_EMAIL="firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com"
     FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n...your-private-key...\\n-----END PRIVATE KEY-----\\n"
+    FIREBASE_STORAGE_BUCKET="your-project-id.appspot.com"
     ```
 
     **Important**: The `FIREBASE_PRIVATE_KEY` from the generated JSON file needs to be formatted as a single line with `\n` as newline characters. The `initializeFirebaseAdmin` function in the code will handle the formatting, so you can copy the key as is.

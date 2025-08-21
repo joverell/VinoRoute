@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { LocationType } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { FirebaseAdminInitializationError } from '@/utils/firebase-admin';
 
 export async function PUT(
   request: Request,
@@ -87,6 +88,9 @@ export async function PUT(
     });
   } catch (error) {
     console.error(`Error updating location type ${id}:`, error);
+    if (error instanceof FirebaseAdminInitializationError) {
+      return NextResponse.json({ error: `Firebase Admin initialization failed: ${error.message}` }, { status: 500 });
+    }
     if (error instanceof Error) {
         if ("code" in error) {
             const firebaseError = error as { code: string; message: string, errorInfo: object };
@@ -98,7 +102,7 @@ export async function PUT(
             }
         }
         if (error.message.includes("does not exist")) {
-            return NextResponse.json({ error: "Storage bucket not found. Please check server configuration." }, { status: 500 });
+            return NextResponse.json({ error: "Storage bucket not found. Please check the FIREBASE_STORAGE_BUCKET environment variable in your .env.local file." }, { status: 500 });
         }
     }
     return NextResponse.json(
