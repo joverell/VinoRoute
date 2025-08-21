@@ -15,11 +15,11 @@ const JokeOfTheDay = () => {
         if (data.jokes && data.jokes.length > 0) {
           setJokes(data.jokes);
         } else {
-          setJokes([{ joke: 'What did the grape say when it was crushed? Nothing, it just let out a little wine!' }]);
+          setJokes([{ type: 'single', joke: 'What did the grape say when it was crushed? Nothing, it just let out a little wine!' }]);
         }
       } catch (error) {
         console.error('Error fetching jokes:', error);
-        setJokes([{ joke: 'What did the grape say when it was crushed? Nothing, it just let out a little wine!' }]);
+        setJokes([{ type: 'single', joke: 'What did the grape say when it was crushed? Nothing, it just let out a little wine!' }]);
       }
     };
 

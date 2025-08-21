@@ -64,6 +64,7 @@ export default function HomePage() {
   const [highlightedWinery, setHighlightedWinery] = useState<Winery | null>(null);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [showSearchResultsPanel, setShowSearchResultsPanel] = useState(false);
+  const [showJokeBanner, setShowJokeBanner] = useState(true);
 
   const searchParams = useSearchParams();
 
@@ -95,6 +96,17 @@ export default function HomePage() {
       }
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      const settingsDocRef = doc(db, 'settings', 'site');
+      const docSnap = await getDoc(settingsDocRef);
+      if (docSnap.exists()) {
+        setShowJokeBanner(docSnap.data().showJokeBanner);
+      }
+    };
+    fetchSiteSettings();
   }, []);
 
   useEffect(() => {
@@ -669,7 +681,7 @@ export default function HomePage() {
         </div>
       </main>
       <PrintableItinerary itinerary={itinerary} startTime={startTime} />
-      <JokeOfTheDay />
+      {showJokeBanner && <JokeOfTheDay />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
