@@ -53,7 +53,20 @@ export async function PUT(
       if (existingData.icon) {
         try {
           const oldIconUrl = new URL(existingData.icon);
-          const oldIconPath = decodeURIComponent(oldIconUrl.pathname).split('/o/')[1];
+          let oldIconPath: string | undefined;
+          const pathname = decodeURIComponent(oldIconUrl.pathname);
+
+          if (pathname.includes('/o/')) {
+              // Signed URL: e.g., /download/storage/v1/b/bucket-name/o/path/to/file
+              oldIconPath = pathname.substring(pathname.indexOf('/o/') + 3);
+          } else {
+              // Public URL: e.g., /bucket-name/path/to/file
+              const bucketName = process.env.FIREBASE_STORAGE_BUCKET;
+              if (bucketName && pathname.startsWith(`/${bucketName}/`)) {
+                  oldIconPath = pathname.substring(`/${bucketName}/`.length);
+              }
+          }
+
           if (oldIconPath) {
             await adminStorage.bucket(process.env.FIREBASE_STORAGE_BUCKET).file(oldIconPath).delete();
           }
@@ -73,11 +86,8 @@ export async function PUT(
         },
       });
 
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: '03-09-2491',
-      });
-      locationTypeData.icon = url;
+      await file.makePublic();
+      locationTypeData.icon = file.publicUrl();
     }
 
     await docRef.update(locationTypeData);
@@ -142,17 +152,23 @@ export async function DELETE(
 
     if (existingData.icon) {
         try {
-            // Extract the path from the storage URL
             const oldIconUrl = new URL(existingData.icon);
-            const oldIconPath = decodeURIComponent(oldIconUrl.pathname).split('/o/')[1];
-            if (oldIconPath) {
-                const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
-                if (!storageBucket) {
-                    console.error("FIREBASE_STORAGE_BUCKET environment variable not set.");
-                    // We can choose to not throw an error here and let the deletion of the DB record proceed
-                } else {
-                    await adminStorage.bucket(storageBucket).file(oldIconPath).delete();
+            let oldIconPath: string | undefined;
+            const pathname = decodeURIComponent(oldIconUrl.pathname);
+
+            if (pathname.includes('/o/')) {
+                // Signed URL: e.g., /download/storage/v1/b/bucket-name/o/path/to/file
+                oldIconPath = pathname.substring(pathname.indexOf('/o/') + 3);
+            } else {
+                // Public URL: e.g., /bucket-name/path/to/file
+                const bucketName = process.env.FIREBASE_STORAGE_BUCKET;
+                if (bucketName && pathname.startsWith(`/${bucketName}/`)) {
+                    oldIconPath = pathname.substring(`/${bucketName}/`.length);
                 }
+            }
+
+            if (oldIconPath) {
+              await adminStorage.bucket(process.env.FIREBASE_STORAGE_BUCKET).file(oldIconPath).delete();
             }
         } catch (e) {
             console.error("Failed to delete icon:", e);
