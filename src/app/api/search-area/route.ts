@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
-import { Winery, LocationType } from '@/types';
+import { LocationType } from '@/types';
 
 const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
@@ -16,12 +16,6 @@ interface GooglePlace {
   name: string;
   vicinity?: string;
   [key: string]: unknown;
-}
-
-interface AddressComponent {
-    long_name: string;
-    short_name: string;
-    types: string[];
 }
 
 async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, type: string): Promise<GooglePlace[]> {
