@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Wine, Winery } from '@/types';
 import { User } from 'firebase/auth';
+import { useToast } from '@/context/ToastContext';
 
 interface WinesManagementProps {
   user: User | null;
@@ -17,7 +18,7 @@ export default function WinesManagement({ user }: WinesManagementProps) {
   const [wines, setWines] = useState<WineWithLocation[]>([]);
   const [locations, setLocations] = useState<Winery[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWine, setEditingWine] = useState<WineWithLocation | null>(null);
   const [newWineData, setNewWineData] = useState({ name: '', locationId: '', type: 'TBD', producer: 'TBD', region: '', country: 'Australia' });
@@ -40,21 +41,19 @@ export default function WinesManagement({ user }: WinesManagementProps) {
 
       setWines(winesData);
       setLocations(locationsData);
-      setError(null);
     } catch (err) {
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      showToast(message, 'error', { operation: 'fetchData' });
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, showToast]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
 
   const openModal = (wine: WineWithLocation | null) => {
     if (wine) {
@@ -79,10 +78,13 @@ export default function WinesManagement({ user }: WinesManagementProps) {
     const { locationId, ...wineData } = newWineData;
     const selectedLocation = locations.find(l => l.id === locationId);
     if (!selectedLocation) {
-        setError('Invalid location selected');
+        showToast('Invalid location selected', 'error');
         return;
     }
     wineData.region = selectedLocation.region;
+
+    const operation = editingWine ? 'update' : 'add';
+    const successMessage = `Wine ${operation === 'update' ? 'updated' : 'added'} successfully.`;
 
     try {
         const token = await user.getIdToken();
@@ -99,14 +101,15 @@ export default function WinesManagement({ user }: WinesManagementProps) {
 
         if (!response.ok) {
             const data = await response.json();
-            throw new Error(data.error || `Failed to ${editingWine ? 'update' : 'add'} wine`);
+            throw new Error(data.error || `Failed to ${operation} wine`);
         }
 
         await fetchData();
         closeModal();
+        showToast(successMessage, 'success', { operation: 'handleSaveWine', wineData });
     } catch (err) {
-        if (err instanceof Error) setError(err.message);
-        else setError('An unknown error occurred');
+        const message = err instanceof Error ? err.message : 'An unknown error occurred';
+        showToast(message, 'error', { operation: 'handleSaveWine', wineData });
     }
   };
 
@@ -126,9 +129,10 @@ export default function WinesManagement({ user }: WinesManagementProps) {
         }
 
         setWines(wines.filter(w => w.lwin !== wine.lwin));
+        showToast('Wine deleted successfully.', 'success', { operation: 'handleDeleteWine', wine });
     } catch (err) {
-        if (err instanceof Error) setError(err.message);
-        else setError('An unknown error occurred');
+        const message = err instanceof Error ? err.message : 'An unknown error occurred';
+        showToast(message, 'error', { operation: 'handleDeleteWine', wine });
     }
   };
 

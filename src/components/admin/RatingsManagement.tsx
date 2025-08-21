@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Rating } from '@/types';
 import { User } from 'firebase/auth';
+import { useToast } from '@/context/ToastContext';
 
 const StarRating = ({ rating }: { rating: number }) => {
   return (
@@ -26,7 +27,7 @@ interface RatingsManagementProps {
 const RatingsManagement = ({ user }: RatingsManagementProps) => {
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
   const [editingRatingId, setEditingRatingId] = useState<string | null>(null);
   const [editedComment, setEditedComment] = useState('');
 
@@ -46,17 +47,16 @@ const RatingsManagement = ({ user }: RatingsManagementProps) => {
         }
         const data = await response.json();
         setRatings(data);
-        setError(null);
       } catch (err) {
-        if (err instanceof Error) setError(err.message);
-        else setError('An unknown error occurred');
+        const message = err instanceof Error ? err.message : 'An unknown error occurred';
+        showToast(message, 'error', { operation: 'fetchRatings' });
       } finally {
         setLoading(false);
       }
     };
 
     fetchRatings();
-  }, [user]);
+  }, [user, showToast]);
 
   const handleDelete = async (id: string) => {
     if (!user || !confirm('Are you sure you want to delete this rating?')) return;
@@ -75,14 +75,14 @@ const RatingsManagement = ({ user }: RatingsManagementProps) => {
       }
 
       setRatings(ratings.filter(r => r.id !== id));
+      showToast('Rating deleted successfully', 'success', { operation: 'handleDelete', id });
     } catch (err) {
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      showToast(message, 'error', { operation: 'handleDelete', id });
     }
   };
 
   if (loading) return <div>Loading ratings...</div>;
-  if (error) return <div>Error: {error}</div>;
 
   const handleEdit = (rating: Rating) => {
     setEditingRatingId(rating.id);
@@ -109,9 +109,10 @@ const RatingsManagement = ({ user }: RatingsManagementProps) => {
 
       setRatings(ratings.map(r => r.id === id ? { ...r, comment: editedComment } : r));
       setEditingRatingId(null);
+      showToast('Rating updated successfully', 'success', { operation: 'handleUpdate', id });
     } catch (err) {
-      if (err instanceof Error) setError(err.message);
-      else setError('An unknown error occurred');
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      showToast(message, 'error', { operation: 'handleUpdate', id });
     }
   };
 
