@@ -68,14 +68,14 @@ export async function PUT(
           }
 
           if (oldIconPath) {
-            await adminStorage.bucket(process.env.FIREBASE_STORAGE_BUCKET).file(oldIconPath).delete();
+            await adminStorage.bucket().file(oldIconPath).delete();
           }
         } catch (e) {
             console.error("Failed to delete old icon:", e);
         }
       }
 
-      const bucket = adminStorage.bucket(process.env.FIREBASE_STORAGE_BUCKET);
+      const bucket = adminStorage.bucket();
       const buffer = Buffer.from(await iconFile.arrayBuffer());
       const destination = `location-type-icons/${uuidv4()}-${iconFile.name}`;
       const file = bucket.file(destination);
@@ -168,7 +168,7 @@ export async function DELETE(
             }
 
             if (oldIconPath) {
-              await adminStorage.bucket(process.env.FIREBASE_STORAGE_BUCKET).file(oldIconPath).delete();
+              await adminStorage.bucket().file(oldIconPath).delete();
             }
         } catch (e) {
             console.error("Failed to delete icon:", e);
