@@ -37,7 +37,7 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, isA
       <p className="text-sm text-gray-600 mb-4">
         We found {locations.length} potential new locations in this map area. Select the ones you want to add.
       </p>
-      <div className="max-h-60 overflow-y-auto pr-2">
+      <div className="pr-2">
         {locations.map((location, index) => (
           <div
             key={location.placeId}
