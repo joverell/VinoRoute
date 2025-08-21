@@ -12,48 +12,62 @@ export interface PotentialLocation {
 }
 
 interface GooglePlace {
-  place_id: string;
-  name: string;
-  vicinity?: string;
-  formatted_address?: string;
-  [key: string]: unknown;
+  id: string;
+  displayName: {
+    text: string;
+  };
+  formattedAddress: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
 }
 
 async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, type: string): Promise<GooglePlace[]> {
   const { north, south, east, west } = bounds;
-  const query = `${type}`;
-  const locationRestriction = `rectangle:${south},${west}|${north},${east}`;
+  const textQuery = type;
 
-  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&locationrestriction=${encodeURIComponent(locationRestriction)}&key=${GOOGLE_MAPS_API_KEY}`;
+  const url = 'https://places.googleapis.com/v1/places:searchText';
+
+  const body = {
+    textQuery,
+    locationRestriction: {
+      rectangle: {
+        low: {
+          latitude: south,
+          longitude: west,
+        },
+        high: {
+          latitude: north,
+          longitude: east,
+        },
+      },
+    },
+  };
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY!,
+        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location',
+      },
+      body: JSON.stringify(body),
+    });
+
     const data = await response.json();
-    if (data.status !== 'OK') {
-      console.error(`Error searching for ${type} in bounds:`, data.status, data.error_message);
+
+    if (data.error) {
+      console.error(`Error searching for ${type} in bounds:`, data.error);
       return [];
     }
-    return data.results || [];
+
+    return data.places || [];
   } catch (error) {
     console.error(`Error searching for ${type} in bounds:`, error);
     return [];
   }
-}
-
-async function getPlaceDetails(placeId: string): Promise<GooglePlace | null> {
-    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,place_id&key=${GOOGLE_MAPS_API_KEY}`;
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-        if (data.status !== 'OK') {
-            console.error(`Error fetching place details for ${placeId}:`, data.status, data.error_message);
-            return null;
-        }
-        return data.result;
-    } catch (error) {
-        console.error(`Error fetching place details for ${placeId}:`, error);
-        return null;
-    }
 }
 
 async function isLocationNew(db: FirebaseFirestore.Firestore, placeId: string): Promise<boolean> {
@@ -97,14 +111,13 @@ export async function POST(req: NextRequest) {
         const searchType = locationTypes[i].singular;
 
         for (const place of places) {
-            if (place.place_id && !seenPlaceIds.has(place.place_id)) {
-                seenPlaceIds.add(place.place_id);
-                if (await isLocationNew(db, place.place_id)) {
-                    const details = await getPlaceDetails(place.place_id);
+            if (place.id && !seenPlaceIds.has(place.id)) {
+                seenPlaceIds.add(place.id);
+                if (await isLocationNew(db, place.id)) {
                     potentialLocations.push({
-                        placeId: place.place_id,
-                        name: place.name,
-                        address: details?.formatted_address || place.vicinity || 'Address not available',
+                        placeId: place.id,
+                        name: place.displayName.text,
+                        address: place.formattedAddress,
                         searchType: searchType,
                     });
                 }
