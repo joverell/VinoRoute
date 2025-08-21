@@ -53,6 +53,7 @@ export default function MapComponent(props: MapProps) {
   const [potentialLocationCoords, setPotentialLocationCoords] = useState<{[key: string]: google.maps.LatLngLiteral}>({});
 
   const getMarkerIcon = (winery: Winery, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
+    // Use the mapImageUrl from the location type if it exists
     if (winery.locationType && winery.locationType.mapImageUrl) {
       return {
         url: winery.locationType.mapImageUrl,

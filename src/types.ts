@@ -32,8 +32,8 @@ export interface LocationType {
   id: string;
   singular: string;
   plural: string;
-  icon?: string;
-  mapImageUrl?: string;
+  icon?: string; // Icon for display in admin UI lists
+  mapImageUrl?: string; // Icon for display on the map
 }
 
 // The Winery and Region interfaces remain the same
