@@ -37,9 +37,12 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, onC
         We found {locations.length} potential new locations in this map area. Select the ones you want to add.
       </p>
       <div className="max-h-60 overflow-y-auto pr-2">
-        {locations.map(location => (
+        {locations.map((location, index) => (
           <div key={location.placeId} className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
             <div className="flex items-center">
+              <span className="flex items-center justify-center w-6 h-6 text-sm font-bold text-white bg-blue-500 rounded-full mr-3">
+                {index + 1}
+              </span>
               <input
                 type="checkbox"
                 checked={selected.includes(location.placeId)}

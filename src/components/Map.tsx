@@ -2,11 +2,12 @@
 
 import { GoogleMap, MarkerF, DirectionsRenderer, InfoWindowF, Polygon } from '@react-google-maps/api';
 import { Winery } from '@/types';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';
 import { regionBoundaries } from '@/data/regionBoundaries';
+import { PotentialLocation } from '@/app/api/search-area/route';
 
 interface MapProps {
   isLoaded: boolean;
@@ -23,11 +24,12 @@ interface MapProps {
   onBoundsChanged: (bounds: google.maps.LatLngBounds | null) => void;
   onSearchThisArea: () => void;
   isSearching: boolean;
+  potentialLocations?: PotentialLocation[];
 }
 
-const createNumberedIcon = (number: number, isLoaded: boolean) => {
+const createNumberedIcon = (number: number, isLoaded: boolean, color = "#FF5757") => {
   if (!isLoaded) return undefined;
-  const svg = `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="14" fill="#FF5757" stroke="white" stroke-width="2"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">${number}</text></svg>`;
+  const svg = `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="14" fill="${color}" stroke="white" stroke-width="2"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">${number}</text></svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
     scaledSize: new google.maps.Size(32, 32),
@@ -39,10 +41,11 @@ export default function MapComponent(props: MapProps) {
   const {
     isLoaded, itinerary, directions, onSelectWinery, availableWineries,
     selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay,
-    mapBounds, onBoundsChanged, onSearchThisArea, isSearching
+    mapBounds, onBoundsChanged, onSearchThisArea, isSearching, potentialLocations = []
   } = props;
 
   const mapRef = useRef<google.maps.Map | null>(null);
+  const [potentialLocationCoords, setPotentialLocationCoords] = useState<{[key: string]: google.maps.LatLngLiteral}>({});
 
   const getMarkerIcon = (winery: Winery): google.maps.Icon | google.maps.Symbol => {
     if (winery.locationType && winery.locationType.mapImageUrl) {
@@ -82,6 +85,29 @@ export default function MapComponent(props: MapProps) {
       }
     }
   }, [directions, selectedRegion, mapBounds]);
+
+  useEffect(() => {
+    if (isLoaded && potentialLocations.length > 0) {
+      const geocoder = new window.google.maps.Geocoder();
+      const newCoords: {[key: string]: google.maps.LatLngLiteral} = {};
+      let processedCount = 0;
+
+      potentialLocations.forEach(location => {
+        geocoder.geocode({ 'placeId': location.placeId }, (results, status) => {
+          if (status === 'OK' && results && results[0]) {
+            newCoords[location.placeId] = {
+              lat: results[0].geometry.location.lat(),
+              lng: results[0].geometry.location.lng(),
+            };
+          }
+          processedCount++;
+          if (processedCount === potentialLocations.length) {
+            setPotentialLocationCoords(newCoords);
+          }
+        });
+      });
+    }
+  }, [isLoaded, potentialLocations]);
 
   const itineraryWineryIds = new Set(itinerary?.map(stop => stop.winery.id) || []);
   const otherAvailableWineries = availableWineries.filter(winery => !itineraryWineryIds.has(winery.id));
@@ -161,6 +187,20 @@ export default function MapComponent(props: MapProps) {
           }}
         />
       ))}
+
+      {potentialLocations.map((location, index) => {
+        const coords = potentialLocationCoords[location.placeId];
+        if (!coords) return null;
+
+        return (
+          <MarkerF
+            key={location.placeId}
+            position={coords}
+            title={location.name}
+            icon={createNumberedIcon(index + 1, isLoaded, "#4299E1")}
+          />
+        );
+      })}
 
       {clickedPoi && (
         <InfoWindowF
