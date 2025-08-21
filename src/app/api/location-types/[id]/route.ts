@@ -89,7 +89,7 @@ export async function PUT(
     console.error(`Error updating location type ${id}:`, error);
     if (error instanceof Error) {
         if ("code" in error) {
-            const firebaseError = error as { code: string; message: string, errorInfo: object };
+            const firebaseError = error as { code: string; message: string };
             if (
                 firebaseError.code === "auth/id-token-expired" ||
                 firebaseError.code === "auth/argument-error"
