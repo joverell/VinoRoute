@@ -6,13 +6,12 @@ import { PotentialLocation } from '@/app/api/search-area/route';
 interface PotentialLocationsPanelProps {
   locations: PotentialLocation[];
   onAddLocations: (selectedLocations: PotentialLocation[]) => void;
-  onClear: () => void;
   isAdding: boolean;
   onSelect: (location: PotentialLocation) => void;
   selectedPotentialLocation?: PotentialLocation | null;
 }
 
-export default function PotentialLocationsPanel({ locations, onAddLocations, onClear, isAdding, onSelect, selectedPotentialLocation }: PotentialLocationsPanelProps) {
+export default function PotentialLocationsPanel({ locations, onAddLocations, isAdding, onSelect, selectedPotentialLocation }: PotentialLocationsPanelProps) {
   const [selected, setSelected] = useState<string[]>([]);
 
   const handleToggle = (placeId: string) => {
@@ -78,10 +77,10 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, onC
           {isAdding ? 'Adding...' : `Add ${selected.length} Selected`}
         </button>
         <button
-          onClick={onClear}
+          onClick={() => setSelected([])}
           className="w-full px-4 py-2 text-sm font-bold text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
         >
-          Clear
+          Clear Selection
         </button>
       </div>
     </div>

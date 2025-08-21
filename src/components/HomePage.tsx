@@ -514,7 +514,9 @@ export default function HomePage() {
       });
       const newLocations: PotentialLocation[] = await response.json();
       if (newLocations.length > 0) {
-        setPotentialLocations(newLocations);
+        setPotentialLocations(prevLocations =>
+          [...prevLocations, ...newLocations.filter(newLoc => !prevLocations.some(prevLoc => prevLoc.placeId === newLoc.placeId))]
+        );
         setShowSearchResultsPanel(true);
         setToast({ message: `Found ${newLocations.length} new potential locations!`, type: 'success' });
       } else {
