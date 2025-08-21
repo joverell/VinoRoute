@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin, FirebaseAdminInitializationError } from '@/utils/firebase-admin';
 import { LocationType } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request: Request) {
   try {
-    const { adminDb, adminAuth, adminStorage } = initializeFirebaseAdmin();
+    const { adminDb, adminAuth } = initializeFirebaseAdmin();
 
     const authorization = request.headers.get('Authorization');
     if (!authorization?.startsWith('Bearer ')) {
@@ -15,36 +14,16 @@ export async function POST(request: Request) {
     const token = authorization.split('Bearer ')[1];
     await adminAuth.verifyIdToken(token);
 
-    const formData = await request.formData();
-    const singular = formData.get('singular') as string;
-    const plural = formData.get('plural') as string;
-    const iconFile = formData.get('icon') as File | null;
+    const { singular, plural, icon } = await request.json();
 
     if (!singular || !plural) {
-      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-    }
-
-    let iconUrl = '';
-    if (iconFile) {
-      const bucket = adminStorage.bucket();
-      const buffer = Buffer.from(await iconFile.arrayBuffer());
-      const destination = `location-type-icons/${uuidv4()}-${iconFile.name}`;
-      const file = bucket.file(destination);
-
-      await file.save(buffer, {
-        metadata: {
-          contentType: iconFile.type,
-        },
-      });
-
-      await file.makePublic();
-      iconUrl = file.publicUrl();
+      return NextResponse.json({ error: 'Invalid request body: singular and plural are required' }, { status: 400 });
     }
 
     const locationTypeData: Omit<LocationType, 'id'> = {
       singular,
       plural,
-      icon: iconUrl,
+      icon: icon || '',
     };
 
     const locationTypesCollection = adminDb.collection('location_types');
