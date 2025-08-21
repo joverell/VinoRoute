@@ -3,6 +3,7 @@
 import { GoogleMap, MarkerF, DirectionsRenderer, InfoWindowF, Polygon } from '@react-google-maps/api';
 import { Winery } from '@/types';
 import { useEffect, useRef, useState } from 'react';
+import { formatAddress } from '@/utils/formatAddress';
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';
@@ -25,6 +26,9 @@ interface MapProps {
   onSearchThisArea: () => void;
   isSearching: boolean;
   potentialLocations?: PotentialLocation[];
+  onSelectPotentialLocation: (location: PotentialLocation) => void;
+  highlightedWinery: Winery | null;
+  selectedWinery: Winery | null;
 }
 
 const createNumberedIcon = (number: number, isLoaded: boolean, color = "#FF5757") => {
@@ -41,29 +45,30 @@ export default function MapComponent(props: MapProps) {
   const {
     isLoaded, itinerary, directions, onSelectWinery, availableWineries,
     selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay,
-    mapBounds, onBoundsChanged, onSearchThisArea, isSearching, potentialLocations = []
+    mapBounds, onBoundsChanged, onSearchThisArea, isSearching, potentialLocations = [],
+    onSelectPotentialLocation, highlightedWinery, selectedWinery
   } = props;
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const [potentialLocationCoords, setPotentialLocationCoords] = useState<{[key: string]: google.maps.LatLngLiteral}>({});
 
-  const getMarkerIcon = (winery: Winery): google.maps.Icon | google.maps.Symbol => {
+  const getMarkerIcon = (winery: Winery, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
     if (winery.locationType && winery.locationType.mapImageUrl) {
       return {
         url: winery.locationType.mapImageUrl,
-        scaledSize: new google.maps.Size(32, 32),
-        anchor: new google.maps.Point(16, 16),
+        scaledSize: new google.maps.Size(isSelected ? 48 : 32, isSelected ? 48 : 32),
+        anchor: new google.maps.Point(isSelected ? 24 : 16, isSelected ? 24 : 16),
       };
     }
     // Default icon
     return {
       path: 'M8.5,1.5 C8.5,1.5 8.5,4.5 9.5,4.5 C10.5,4.5 10.5,1.5 10.5,1.5 M8,5 L11,5 L11,6 C11,6 12,6.5 12,8 L12,18 C12,19 11,20 9.5,20 C8,20 7,19 7,18 L7,8 C7,6.5 8,6 8,6 L8,5 M9.5,7 C9.5,7 9,7.5 9,8 L10,8 C10,7.5 9.5,7 9.5,7',
-      fillColor: '#FF5757',
+      fillColor: isSelected ? '#000000' : '#FF5757',
       fillOpacity: 1.0,
       strokeWeight: 1,
       strokeColor: '#FFFFFF',
       rotation: 0,
-      scale: 1.5,
+      scale: isSelected ? 2.5 : 1.5,
       anchor: new google.maps.Point(9.5, 20),
     };
   };
@@ -165,7 +170,7 @@ export default function MapComponent(props: MapProps) {
           key={winery.id}
           position={winery.coords}
           title={winery.name}
-          icon={getMarkerIcon(winery)}
+          icon={getMarkerIcon(winery, selectedWinery?.id === winery.id)}
           onClick={(e) => {
             e.stop();
             onSelectWinery(winery);
@@ -179,7 +184,7 @@ export default function MapComponent(props: MapProps) {
           key={stop.winery.id}
           position={stop.winery.coords}
           title={stop.winery.name}
-          icon={createNumberedIcon(index + 1, isLoaded)}
+          icon={createNumberedIcon(index + 1, isLoaded, selectedWinery?.id === stop.winery.id ? '#000000' : '#FF5757')}
           onClick={(e) => {
             e.stop();
             onSelectWinery(stop.winery);
@@ -198,9 +203,28 @@ export default function MapComponent(props: MapProps) {
             position={coords}
             title={location.name}
             icon={createNumberedIcon(index + 1, isLoaded, "#4299E1")}
+            onClick={() => onSelectPotentialLocation(location)}
           />
         );
       })}
+
+      {highlightedWinery && (
+        <InfoWindowF
+          position={highlightedWinery.coords}
+          onCloseClick={() => onSelectWinery(null)}
+        >
+          <div className="p-2">
+            <h4 className="font-bold text-gray-800">{highlightedWinery.name}</h4>
+            <p className="text-sm text-gray-600">{formatAddress(highlightedWinery.address)}</p>
+            <button
+                onClick={() => onSelectWinery(highlightedWinery)}
+                className="w-full px-3 py-1 mt-2 text-sm font-bold text-white bg-rose-500 rounded-lg hover:bg-rose-600"
+            >
+              View Details
+            </button>
+          </div>
+        </InfoWindowF>
+      )}
 
       {clickedPoi && (
         <InfoWindowF

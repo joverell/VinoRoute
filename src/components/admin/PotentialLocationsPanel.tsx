@@ -8,9 +8,11 @@ interface PotentialLocationsPanelProps {
   onAddLocations: (selectedLocations: PotentialLocation[]) => void;
   onClear: () => void;
   isAdding: boolean;
+  onSelect: (location: PotentialLocation) => void;
+  selectedPotentialLocation?: PotentialLocation | null;
 }
 
-export default function PotentialLocationsPanel({ locations, onAddLocations, onClear, isAdding }: PotentialLocationsPanelProps) {
+export default function PotentialLocationsPanel({ locations, onAddLocations, onClear, isAdding, onSelect, selectedPotentialLocation }: PotentialLocationsPanelProps) {
   const [selected, setSelected] = useState<string[]>([]);
 
   const handleToggle = (placeId: string) => {
@@ -38,7 +40,11 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, onC
       </p>
       <div className="max-h-60 overflow-y-auto pr-2">
         {locations.map((location, index) => (
-          <div key={location.placeId} className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50">
+          <div
+            key={location.placeId}
+            className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${selectedPotentialLocation?.placeId === location.placeId ? 'bg-rose-100' : 'hover:bg-gray-50'}`}
+            onClick={() => onSelect(location)}
+          >
             <div className="flex items-center">
               <span className="flex items-center justify-center w-6 h-6 text-sm font-bold text-white bg-blue-500 rounded-full mr-3">
                 {index + 1}
@@ -46,7 +52,10 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, onC
               <input
                 type="checkbox"
                 checked={selected.includes(location.placeId)}
-                onChange={() => handleToggle(location.placeId)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleToggle(location.placeId);
+                }}
                 className="h-4 w-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500"
               />
               <div className="ml-3">
