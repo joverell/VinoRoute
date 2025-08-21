@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import MapComponent from '@/components/Map';
 import Sidebar from '@/components/Sidebar';
 import WineryDetailPanel from '@/components/WineryDetailPanel';
-import SearchResultsPanel from '@/components/SearchResultsPanel';
 import { Winery, Region, SavedTour, LocationType } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
@@ -15,7 +14,6 @@ import { db, auth } from '@/utils/firebase';
 import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';
-import { PotentialLocation } from '@/app/api/search-area/route';
 import Toast from './Toast';
 
 export interface TripStop {
@@ -56,14 +54,10 @@ export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [locationTypeFilters, setLocationTypeFilters] = useState<string[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [isSearching, setIsSearching] = useState(false);
   const [currentMapBounds, setCurrentMapBounds] = useState<google.maps.LatLngBounds | null>(null);
-  const [potentialLocations, setPotentialLocations] = useState<PotentialLocation[]>([]);
-  const [isAddingNewLocations, setIsAddingNewLocations] = useState(false);
-  const [selectedPotentialLocation, setSelectedPotentialLocation] = useState<PotentialLocation | null>(null);
-  const [highlightedWinery, setHighlightedWinery] = useState<Winery | null>(null);
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-  const [showSearchResultsPanel, setShowSearchResultsPanel] = useState(false);
+  const [searchWithinMapBounds, setSearchWithinMapBounds] = useState(false);
+  const [mapSearchActive, setMapSearchActive] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -349,58 +343,6 @@ export default function HomePage() {
     }
   };
 
-  const handleSelectPotentialLocation = (location: PotentialLocation) => {
-    setSelectedPotentialLocation(location);
-    if (geocoderRef.current) {
-        geocoderRef.current.geocode({ placeId: location.placeId }, (results, status) => {
-            if (status === 'OK' && results && results[0]) {
-                const winery: Winery = {
-                    id: location.placeId,
-                    name: location.name,
-                    address: location.address,
-                    coords: {
-                        lat: results[0].geometry.location.lat(),
-                        lng: results[0].geometry.location.lng(),
-                    },
-                    type: 'potential',
-                    region: selectedRegion?.name || '',
-                    tags: [],
-                    openingHours: {},
-                };
-                setHighlightedWinery(winery);
-            }
-        });
-    }
-  };
-
-  const handleAddSelectedLocations = async (selectedLocations: PotentialLocation[]) => {
-    setIsAddingNewLocations(true);
-    try {
-      const addedLocations: Winery[] = [];
-      for (const loc of selectedLocations) {
-        const response = await fetch('/api/admin/add-location', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ placeId: loc.placeId, searchType: loc.searchType }),
-        });
-        if (response.ok) {
-          const newLocation = await response.json();
-          addedLocations.push(newLocation);
-        } else {
-          console.error(`Failed to add location: ${loc.name}`);
-        }
-      }
-      setAllLocations(prev => [...prev, ...addedLocations]);
-      setPotentialLocations([]);
-      setToast({ message: `Successfully added ${addedLocations.length} new locations!`, type: 'success' });
-    } catch (error) {
-      console.error("Error adding selected locations:", error);
-      setToast({ message: "An error occurred while adding new locations.", type: 'error' });
-    } finally {
-      setIsAddingNewLocations(false);
-    }
-  };
-
   const handleSaveTour = async () => {
     if (!user) {
       alert("Please login to save your tour.");
@@ -455,6 +397,8 @@ export default function HomePage() {
   };
 
   const handleRegionSelection = (value: string) => {
+    setSearchWithinMapBounds(false);
+    setMapSearchActive(false);
     setMapBounds(null);
     if (value === 'Australia') {
       setSelectedRegion(AUSTRALIA_REGION);
@@ -485,6 +429,8 @@ export default function HomePage() {
   };
 
   const handleTagFilterChange = (tag: string) => {
+    setSearchWithinMapBounds(false);
+    setMapSearchActive(false);
     setSearchTags(prevTags =>
       prevTags.includes(tag)
         ? prevTags.filter(t => t !== tag)
@@ -493,6 +439,8 @@ export default function HomePage() {
   };
 
   const handleLocationTypeChange = (typeId: string) => {
+    setSearchWithinMapBounds(false);
+    setMapSearchActive(false);
     setLocationTypeFilters(prevTypes =>
       prevTypes.includes(typeId)
         ? prevTypes.filter(t => t !== typeId)
@@ -500,43 +448,25 @@ export default function HomePage() {
     );
   };
 
-  const handleSearchThisArea = async () => {
+  const handleSearchThisArea = () => {
     if (!currentMapBounds) {
-      alert("Map bounds not set yet. Please move the map first.");
+      alert("Map bounds not available. Please move the map first.");
       return;
     }
-    setIsSearching(true);
-    try {
-      const response = await fetch('/api/search-area', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bounds: currentMapBounds.toJSON() }),
-      });
-      const newLocations: PotentialLocation[] = await response.json();
-      if (newLocations.length > 0) {
-        setPotentialLocations(prevLocations =>
-          [...prevLocations, ...newLocations.filter(newLoc => !prevLocations.some(prevLoc => prevLoc.placeId === newLoc.placeId))]
-        );
-        setShowSearchResultsPanel(true);
-        setToast({ message: `Found ${newLocations.length} new potential locations!`, type: 'success' });
-      } else {
-        setToast({ message: "No new potential locations found in this area.", type: 'success' });
-      }
-    } catch (error) {
-      console.error("Error searching this area:", error);
-      setToast({ message: "An error occurred while searching this area.", type: 'error' });
-    } finally {
-      setIsSearching(false);
-    }
+    setSearchWithinMapBounds(true);
+    setMapSearchActive(true);
   };
 
   const availableWineries = allLocations.filter(w => {
     const inTrip = tripStops.some(stop => stop.winery.id === w.id);
     if (inTrip) return false;
 
+    const boundsMatch = !searchWithinMapBounds || (currentMapBounds && currentMapBounds.contains(w.coords));
+    if (!boundsMatch) return false;
+
     let regionMatch;
-    if (filterMode === 'country') {
-      regionMatch = true;
+    if (filterMode === 'country' || mapSearchActive) {
+        regionMatch = true;
     } else if (filterMode === 'state' && selectedRegion) {
       regionMatch = w.state === selectedRegion.state;
     } else {
@@ -605,9 +535,15 @@ export default function HomePage() {
           locationTypeFilters={locationTypeFilters}
           onLocationTypeChange={handleLocationTypeChange}
           searchTerm={searchTerm}
-          onSearchTermChange={setSearchTerm}
+          onSearchTermChange={(term) => {
+            setSearchTerm(term);
+            setSearchWithinMapBounds(false);
+            setMapSearchActive(false);
+          }}
           searchTags={searchTags}
           onTagFilterChange={handleTagFilterChange}
+          onSearchThisArea={handleSearchThisArea}
+          mapSearchActive={mapSearchActive}
         />
         <div className="flex-grow h-full">
           <MapComponent
@@ -621,44 +557,22 @@ export default function HomePage() {
             onMapClick={(poi) => {
               setClickedPoi(poi);
               if (!poi) {
-                setHighlightedWinery(null);
-                setSelectedPotentialLocation(null);
+                // Future implementation might need to clear highlighted winery from another source
               }
             }}
             onAddPoiToTrip={handleAddPoiToTrip}
             showRegionOverlay={showRegionOverlay}
             mapBounds={mapBounds}
             onBoundsChanged={setCurrentMapBounds}
-            onSearchThisArea={handleSearchThisArea}
-            isSearching={isSearching}
-            potentialLocations={potentialLocations}
-            onSelectPotentialLocation={handleSelectPotentialLocation}
-            highlightedWinery={highlightedWinery}
             selectedWinery={selectedWinery}
           />
         </div>
         <div className="flex-shrink-0 h-full">
-          {showSearchResultsPanel ? (
-            <SearchResultsPanel
-              potentialLocations={potentialLocations}
-              onAddPotentialLocations={handleAddSelectedLocations}
-              onClearPotentialLocations={() => {
-                setPotentialLocations([]);
-                setShowSearchResultsPanel(false);
-                setHighlightedWinery(null);
-                setSelectedPotentialLocation(null);
-              }}
-              isAddingPotentialLocations={isAddingNewLocations}
-              onSelectPotentialLocation={handleSelectPotentialLocation}
-              selectedPotentialLocation={selectedPotentialLocation}
-            />
-          ) : selectedWinery ? (
+          {selectedWinery ? (
             <WineryDetailPanel
               winery={selectedWinery}
               onClearSelection={() => {
                 setSelectedWinery(null);
-                setHighlightedWinery(null);
-                setSelectedPotentialLocation(null);
               }}
               onAddToTrip={handleAddToTrip}
               onRemoveFromTrip={handleRemoveFromTrip}

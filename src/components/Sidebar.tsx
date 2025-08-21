@@ -69,6 +69,8 @@ interface SidebarProps {
   onSearchTermChange: (term: string) => void;
   searchTags: string[];
   onTagFilterChange: (tag: string) => void;
+  onSearchThisArea: () => void;
+  mapSearchActive: boolean;
 }
 
 export default function Sidebar({
@@ -80,7 +82,8 @@ export default function Sidebar({
   availableWineries, regions, locationTypes, prepopulatedStop, onClearPrepopulatedStop,
   filterMode,
   locationTypeFilters, onLocationTypeChange,
-  searchTerm, onSearchTermChange, searchTags, onTagFilterChange
+  searchTerm, onSearchTermChange, searchTags, onTagFilterChange,
+  onSearchThisArea, mapSearchActive
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
   const [showInfoTooltip, setShowInfoTooltip] = useState(false);
@@ -300,13 +303,30 @@ export default function Sidebar({
               </div>
               {showCustomForm && <AddCustomStopForm onAdd={handleAddCustomAndClose} onCancel={handleCancelCustomForm} defaultDuration={defaultDuration} prepopulatedData={prepopulatedStop} />}
               <div className="mb-4">
-                <input
-                  type="text"
-                  placeholder="Search wineries or tags..."
-                  value={searchTerm}
-                  onChange={(e) => onSearchTermChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Search wineries or tags..."
+                    value={searchTerm}
+                    onChange={(e) => onSearchTermChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                  />
+                  <button
+                    onClick={onSearchThisArea}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    title="Search in the visible map area"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M17.5,2.5h-15C1.1,2.5,0,3.6,0,5v10c0,1.4,1.1,2.5,2.5,2.5h15c1.4,0,2.5-1.1,2.5-2.5V5C20,3.6,18.9,2.5,17.5,2.5z M10,6.2c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2S11.1,6.2,10,6.2z M15,15H5v-0.8c0-1.7,3.3-2.5,5-2.5s5,0.8,5,2.5V15z"/>
+                    </svg>
+                  </button>
+                </div>
+                {mapSearchActive && (
+                  <div className="mt-2 text-sm text-center text-teal-600">
+                    <p>Showing locations in the current map view.</p>
+                    <button onClick={() => onRegionSelection(filterMode === 'country' ? 'Australia' : filterMode === 'state' ? `state-${selectedRegion.state}` : selectedRegion.name)} className="text-xs text-gray-500 underline">Clear</button>
+                  </div>
+                )}
                 {searchTags.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="text-sm font-medium text-gray-700">Filtering by:</span>
