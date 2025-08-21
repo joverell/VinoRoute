@@ -1,22 +1,15 @@
 import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { LocationType } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 import { FirebaseAdminInitializationError } from '@/utils/firebase-admin';
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { adminDb, adminAuth, adminStorage } = initializeFirebaseAdmin();
+  const { adminDb, adminAuth } = initializeFirebaseAdmin();
   const { id } = await params;
   try {
-    if (!adminDb || !adminAuth || !adminStorage) {
-      return NextResponse.json(
-        { error: "Firebase admin not initialized" },
-        { status: 500 },
-      );
-    }
     const authorization = request.headers.get("Authorization");
     if (!authorization?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -25,10 +18,7 @@ export async function PUT(
     const token = authorization.split("Bearer ")[1];
     await adminAuth.verifyIdToken(token);
 
-    const formData = await request.formData();
-    const singular = formData.get('singular') as string;
-    const plural = formData.get('plural') as string;
-    const iconFile = formData.get('icon') as File | null;
+    const { singular, plural, icon } = await request.json();
 
     if (!singular || !plural) {
       return NextResponse.json(
@@ -42,53 +32,12 @@ export async function PUT(
     if (!doc.exists) {
         return NextResponse.json({ error: 'Location type not found' }, { status: 404 });
     }
-    const existingData = doc.data() as LocationType;
 
     const locationTypeData: Partial<Omit<LocationType, "id">> = {
         singular,
         plural,
+        icon,
     };
-
-    if (iconFile) {
-      if (existingData.icon) {
-        try {
-          const oldIconUrl = new URL(existingData.icon);
-          let oldIconPath: string | undefined;
-          const pathname = decodeURIComponent(oldIconUrl.pathname);
-
-          if (pathname.includes('/o/')) {
-              // Signed URL: e.g., /download/storage/v1/b/bucket-name/o/path/to/file
-              oldIconPath = pathname.substring(pathname.indexOf('/o/') + 3);
-          } else {
-              // Public URL: e.g., /bucket-name/path/to/file
-              const bucketName = process.env.FIREBASE_STORAGE_BUCKET;
-              if (bucketName && pathname.startsWith(`/${bucketName}/`)) {
-                  oldIconPath = pathname.substring(`/${bucketName}/`.length);
-              }
-          }
-
-          if (oldIconPath) {
-            await adminStorage.bucket().file(oldIconPath).delete();
-          }
-        } catch (e) {
-            console.error("Failed to delete old icon:", e);
-        }
-      }
-
-      const bucket = adminStorage.bucket();
-      const buffer = Buffer.from(await iconFile.arrayBuffer());
-      const destination = `location-type-icons/${uuidv4()}-${iconFile.name}`;
-      const file = bucket.file(destination);
-
-      await file.save(buffer, {
-        metadata: {
-          contentType: iconFile.type,
-        },
-      });
-
-      await file.makePublic();
-      locationTypeData.icon = file.publicUrl();
-    }
 
     await docRef.update(locationTypeData);
 
@@ -111,9 +60,6 @@ export async function PUT(
                 return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
             }
         }
-        if (error.message.includes("does not exist")) {
-            return NextResponse.json({ error: "Storage bucket not found. Please check the FIREBASE_STORAGE_BUCKET environment variable in your .env.local file." }, { status: 500 });
-        }
     }
     return NextResponse.json(
       { error: "Internal Server Error" },
@@ -126,15 +72,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { adminDb, adminAuth, adminStorage } = initializeFirebaseAdmin();
+  const { adminDb, adminAuth } = initializeFirebaseAdmin();
   const { id } = await params;
   try {
-    if (!adminDb || !adminAuth || !adminStorage) {
-      return NextResponse.json(
-        { error: "Firebase admin not initialized" },
-        { status: 500 },
-      );
-    }
     const authorization = request.headers.get("Authorization");
     if (!authorization?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -148,33 +88,9 @@ export async function DELETE(
     if (!doc.exists) {
         return NextResponse.json({ error: 'Location type not found' }, { status: 404 });
     }
-    const existingData = doc.data() as LocationType;
 
-    if (existingData.icon) {
-        try {
-            const oldIconUrl = new URL(existingData.icon);
-            let oldIconPath: string | undefined;
-            const pathname = decodeURIComponent(oldIconUrl.pathname);
-
-            if (pathname.includes('/o/')) {
-                // Signed URL: e.g., /download/storage/v1/b/bucket-name/o/path/to/file
-                oldIconPath = pathname.substring(pathname.indexOf('/o/') + 3);
-            } else {
-                // Public URL: e.g., /bucket-name/path/to/file
-                const bucketName = process.env.FIREBASE_STORAGE_BUCKET;
-                if (bucketName && pathname.startsWith(`/${bucketName}/`)) {
-                    oldIconPath = pathname.substring(`/${bucketName}/`.length);
-                }
-            }
-
-            if (oldIconPath) {
-              await adminStorage.bucket().file(oldIconPath).delete();
-            }
-        } catch (e) {
-            console.error("Failed to delete icon:", e);
-        }
-    }
-
+    // Note: The icon file in storage is now deleted on the client-side
+    // See LocationTypeManagement.tsx handleDelete function
     await docRef.delete();
 
     return NextResponse.json({

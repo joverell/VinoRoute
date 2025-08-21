@@ -1,9 +1,14 @@
 'use client';
 
+'use client';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { LocationType } from '@/types';
 import { User } from 'firebase/auth';
 import Image from 'next/image';
+import { storage } from '@/utils/firebase';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 interface LocationTypeManagementProps {
   user: User | null;
@@ -54,14 +59,25 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
     e.preventDefault();
     if (!user) return;
 
-    const formData = new FormData();
-    formData.append('singular', singular);
-    formData.append('plural', plural);
-    if (icon) {
-      formData.append('icon', icon);
-    }
+    let iconUrl = isEditing ? isEditing.icon : '';
+    const oldIconUrl = isEditing ? isEditing.icon : null;
+    let newIconUploaded = false;
 
     try {
+      // If a new icon file is selected, upload it
+      if (icon) {
+        const storageRef = ref(storage, `location-type-icons/${uuidv4()}-${icon.name}`);
+        const uploadResult = await uploadBytes(storageRef, icon);
+        iconUrl = await getDownloadURL(uploadResult.ref);
+        newIconUploaded = true;
+      }
+
+      const payload = {
+        singular,
+        plural,
+        icon: iconUrl,
+      };
+
       const token = await user.getIdToken();
       const url = isEditing ? `/api/location-types/${isEditing.id}` : '/api/location-types';
       const method = isEditing ? 'PUT' : 'POST';
@@ -69,18 +85,38 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       const response = await fetch(url, {
         method: method,
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formData
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to ${isEditing ? 'update' : 'add'} location type`);
+        // If the API call fails and we uploaded a new icon, delete it to prevent orphaned files.
+        if (newIconUploaded) {
+          const newIconRef = ref(storage, iconUrl);
+          await deleteObject(newIconRef);
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to ${isEditing ? 'update' : 'add'} location type`);
+      }
+
+      // If the API call was successful and a new icon was uploaded, delete the old one.
+      if (newIconUploaded && oldIconUrl) {
+        try {
+          const oldIconRef = ref(storage, oldIconUrl);
+          await deleteObject(oldIconRef);
+        } catch (storageError) {
+          console.warn("Database updated but failed to delete old icon:", storageError);
+          // The DB is updated, so this is just a cleanup warning.
+        }
       }
 
       await fetchLocationTypes();
       cancelForm();
+
     } catch (err) {
+      console.error("Form submission error:", err);
       if (err instanceof Error) setError(err.message);
       else setError('An unknown error occurred');
     }
@@ -88,6 +124,8 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
 
   const handleDelete = async (id: string) => {
     if (!user || !confirm('Are you sure you want to delete this location type?')) return;
+
+    const locationTypeToDelete = locationTypes.find(lt => lt.id === id);
 
     try {
       const token = await user.getIdToken();
@@ -99,7 +137,19 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete location type');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete location type');
+      }
+
+      // If the location type was deleted from DB, delete the icon from storage
+      if (locationTypeToDelete && locationTypeToDelete.icon) {
+        try {
+          const iconRef = ref(storage, locationTypeToDelete.icon);
+          await deleteObject(iconRef);
+        } catch (storageError) {
+          console.error("Failed to delete icon from storage, but DB entry was removed:", storageError);
+          // Decide if you want to inform the user about this partial failure
+        }
       }
 
       setLocationTypes(locationTypes.filter(lt => lt.id !== id));
