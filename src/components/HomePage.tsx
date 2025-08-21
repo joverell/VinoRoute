@@ -85,7 +85,7 @@ export default function HomePage() {
       if (currentUser) {
         try {
           const idTokenResult = await currentUser.getIdTokenResult(true);
-          setIsAdmin(!!idTokenResult.claims.isAdmin);
+          setIsAdmin(!!idTokenResult.claims.admin);
         } catch (error) {
           console.error("Error checking admin status:", error);
           setIsAdmin(false);
