@@ -16,6 +16,7 @@ import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, 
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';
 import { PotentialLocation } from '@/app/api/search-area/route';
+import Toast from './Toast';
 
 export interface TripStop {
   winery: Winery;
@@ -61,6 +62,8 @@ export default function HomePage() {
   const [isAddingNewLocations, setIsAddingNewLocations] = useState(false);
   const [selectedPotentialLocation, setSelectedPotentialLocation] = useState<PotentialLocation | null>(null);
   const [highlightedWinery, setHighlightedWinery] = useState<Winery | null>(null);
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [showSearchResultsPanel, setShowSearchResultsPanel] = useState(false);
 
   const searchParams = useSearchParams();
 
@@ -389,10 +392,10 @@ export default function HomePage() {
       }
       setAllLocations(prev => [...prev, ...addedLocations]);
       setPotentialLocations([]);
-      alert(`Successfully added ${addedLocations.length} new locations!`);
+      setToast({ message: `Successfully added ${addedLocations.length} new locations!`, type: 'success' });
     } catch (error) {
       console.error("Error adding selected locations:", error);
-      alert("An error occurred while adding new locations.");
+      setToast({ message: "An error occurred while adding new locations.", type: 'error' });
     } finally {
       setIsAddingNewLocations(false);
     }
@@ -512,12 +515,14 @@ export default function HomePage() {
       const newLocations: PotentialLocation[] = await response.json();
       if (newLocations.length > 0) {
         setPotentialLocations(newLocations);
+        setShowSearchResultsPanel(true);
+        setToast({ message: `Found ${newLocations.length} new potential locations!`, type: 'success' });
       } else {
-        alert("No new potential locations found in this area.");
+        setToast({ message: "No new potential locations found in this area.", type: 'success' });
       }
     } catch (error) {
       console.error("Error searching this area:", error);
-      alert("An error occurred while searching this area.");
+      setToast({ message: "An error occurred while searching this area.", type: 'error' });
     } finally {
       setIsSearching(false);
     }
@@ -630,37 +635,40 @@ export default function HomePage() {
             selectedWinery={selectedWinery}
           />
         </div>
-        {potentialLocations.length > 0 && (
-          <SearchResultsPanel
-            potentialLocations={potentialLocations}
-            onAddPotentialLocations={handleAddSelectedLocations}
-            onClearPotentialLocations={() => {
-              setPotentialLocations([]);
-              setHighlightedWinery(null);
-              setSelectedPotentialLocation(null);
-            }}
-            isAddingPotentialLocations={isAddingNewLocations}
-            onSelectPotentialLocation={handleSelectPotentialLocation}
-            selectedPotentialLocation={selectedPotentialLocation}
-          />
-        )}
-        {selectedWinery && (
-          <WineryDetailPanel
-            winery={selectedWinery}
-            onClearSelection={() => {
-              setSelectedWinery(null);
-              setHighlightedWinery(null);
-              setSelectedPotentialLocation(null);
-            }}
-            onAddToTrip={handleAddToTrip}
-            onRemoveFromTrip={handleRemoveFromTrip}
-            isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
-            user={user}
-          />
-        )}
+        <div className="flex-shrink-0 h-full">
+          {showSearchResultsPanel ? (
+            <SearchResultsPanel
+              potentialLocations={potentialLocations}
+              onAddPotentialLocations={handleAddSelectedLocations}
+              onClearPotentialLocations={() => {
+                setPotentialLocations([]);
+                setShowSearchResultsPanel(false);
+                setHighlightedWinery(null);
+                setSelectedPotentialLocation(null);
+              }}
+              isAddingPotentialLocations={isAddingNewLocations}
+              onSelectPotentialLocation={handleSelectPotentialLocation}
+              selectedPotentialLocation={selectedPotentialLocation}
+            />
+          ) : selectedWinery ? (
+            <WineryDetailPanel
+              winery={selectedWinery}
+              onClearSelection={() => {
+                setSelectedWinery(null);
+                setHighlightedWinery(null);
+                setSelectedPotentialLocation(null);
+              }}
+              onAddToTrip={handleAddToTrip}
+              onRemoveFromTrip={handleRemoveFromTrip}
+              isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
+              user={user}
+            />
+          ) : null}
+        </div>
       </main>
       <PrintableItinerary itinerary={itinerary} startTime={startTime} />
       <JokeOfTheDay />
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 }

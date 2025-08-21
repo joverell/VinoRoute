@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { PotentialLocation } from '@/app/api/search-area/route';
 import PotentialLocationsPanel from './admin/PotentialLocationsPanel';
 
@@ -18,9 +19,21 @@ export default function SearchResultsPanel({
   onSelectPotentialLocation,
   selectedPotentialLocation,
 }: SearchResultsPanelProps) {
+  const [nameFilter, setNameFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+
+  const searchTypes = [...new Set(potentialLocations.map(loc => loc.searchType))];
+
+  const filteredLocations = potentialLocations.filter(loc => {
+    const nameMatch = loc.name.toLowerCase().includes(nameFilter.toLowerCase());
+    const typeMatch = typeFilter === '' || loc.searchType === typeFilter;
+    return nameMatch && typeMatch;
+  });
+
   return (
-    <div className="fixed top-0 right-0 h-full w-full sm:w-96 bg-white shadow-lg p-4 overflow-y-auto z-20">
-      <div className="flex justify-end sm:hidden">
+    <div className="w-full sm:w-96 bg-white shadow-lg p-4 overflow-y-auto z-20 flex-shrink-0 h-full">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">New Locations Found</h2>
         <button
           onClick={onClearPotentialLocations}
           className="p-2 text-gray-500 hover:text-gray-700"
@@ -30,8 +43,27 @@ export default function SearchResultsPanel({
           </svg>
         </button>
       </div>
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Filter by name..."
+          value={nameFilter}
+          onChange={e => setNameFilter(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        />
+        <select
+          value={typeFilter}
+          onChange={e => setTypeFilter(e.target.value)}
+          className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md"
+        >
+          <option value="">All Types</option>
+          {searchTypes.map(type => (
+            <option key={type} value={type}>{type}</option>
+          ))}
+        </select>
+      </div>
       <PotentialLocationsPanel
-        locations={potentialLocations}
+        locations={filteredLocations}
         onAddLocations={onAddPotentialLocations}
         onClear={onClearPotentialLocations}
         isAdding={isAddingPotentialLocations}
