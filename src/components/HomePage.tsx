@@ -595,6 +595,7 @@ export default function HomePage() {
             onBoundsChanged={setCurrentMapBounds}
             onSearchThisArea={handleSearchThisArea}
             isSearching={isSearching}
+            potentialLocations={potentialLocations}
           />
         </div>
         {selectedWinery && (

@@ -15,6 +15,7 @@ interface GooglePlace {
   place_id: string;
   name: string;
   vicinity?: string;
+  formatted_address?: string;
   [key: string]: unknown;
 }
 
@@ -37,6 +38,22 @@ async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, typ
     console.error(`Error searching for ${type} in bounds:`, error);
     return [];
   }
+}
+
+async function getPlaceDetails(placeId: string): Promise<GooglePlace | null> {
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,place_id&key=${GOOGLE_MAPS_API_KEY}`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.status !== 'OK') {
+            console.error(`Error fetching place details for ${placeId}:`, data.status, data.error_message);
+            return null;
+        }
+        return data.result;
+    } catch (error) {
+        console.error(`Error fetching place details for ${placeId}:`, error);
+        return null;
+    }
 }
 
 async function isLocationNew(db: FirebaseFirestore.Firestore, placeId: string): Promise<boolean> {
@@ -83,10 +100,11 @@ export async function POST(req: NextRequest) {
             if (place.place_id && !seenPlaceIds.has(place.place_id)) {
                 seenPlaceIds.add(place.place_id);
                 if (await isLocationNew(db, place.place_id)) {
+                    const details = await getPlaceDetails(place.place_id);
                     potentialLocations.push({
                         placeId: place.place_id,
                         name: place.name,
-                        address: place.vicinity || 'Address not available',
+                        address: details?.formatted_address || place.vicinity || 'Address not available',
                         searchType: searchType,
                     });
                 }
