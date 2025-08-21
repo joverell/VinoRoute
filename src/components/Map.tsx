@@ -8,6 +8,8 @@ import { ItineraryStop } from '@/utils/itineraryLogic';
 import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';
 import { regionBoundaries } from '@/data/regionBoundaries';
+import { PotentialLocation } from '@/app/api/search-area/route';
+
 interface MapProps {
   isLoaded: boolean;
   itinerary: ItineraryStop[] | null;
@@ -21,6 +23,11 @@ interface MapProps {
   showRegionOverlay: boolean;
   mapBounds: google.maps.LatLngBoundsLiteral | null;
   onBoundsChanged: (bounds: google.maps.LatLngBounds | null) => void;
+  onSearchThisArea: () => void;
+  isSearching: boolean;
+  potentialLocations?: PotentialLocation[];
+  onSelectPotentialLocation: (location: PotentialLocation) => void;
+  highlightedWinery: Winery | null;
   selectedWinery: Winery | null;
 }
 
@@ -38,10 +45,12 @@ export default function MapComponent(props: MapProps) {
   const {
     isLoaded, itinerary, directions, onSelectWinery, availableWineries,
     selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay,
-    mapBounds, onBoundsChanged, selectedWinery
+    mapBounds, onBoundsChanged, onSearchThisArea, isSearching, potentialLocations = [],
+    onSelectPotentialLocation, highlightedWinery, selectedWinery
   } = props;
 
   const mapRef = useRef<google.maps.Map | null>(null);
+  const [potentialLocationCoords, setPotentialLocationCoords] = useState<{[key: string]: google.maps.LatLngLiteral}>({});
 
   const getMarkerIcon = (winery: Winery, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
     if (winery.locationType && winery.locationType.mapImageUrl) {
@@ -81,6 +90,29 @@ export default function MapComponent(props: MapProps) {
       }
     }
   }, [directions, selectedRegion, mapBounds]);
+
+  useEffect(() => {
+    if (isLoaded && potentialLocations.length > 0) {
+      const geocoder = new window.google.maps.Geocoder();
+      const newCoords: {[key: string]: google.maps.LatLngLiteral} = {};
+      let processedCount = 0;
+
+      potentialLocations.forEach(location => {
+        geocoder.geocode({ 'placeId': location.placeId }, (results, status) => {
+          if (status === 'OK' && results && results[0]) {
+            newCoords[location.placeId] = {
+              lat: results[0].geometry.location.lat(),
+              lng: results[0].geometry.location.lng(),
+            };
+          }
+          processedCount++;
+          if (processedCount === potentialLocations.length) {
+            setPotentialLocationCoords(newCoords);
+          }
+        });
+      });
+    }
+  }, [isLoaded, potentialLocations]);
 
   const itineraryWineryIds = new Set(itinerary?.map(stop => stop.winery.id) || []);
   const otherAvailableWineries = availableWineries.filter(winery => !itineraryWineryIds.has(winery.id));
@@ -161,6 +193,39 @@ export default function MapComponent(props: MapProps) {
         />
       ))}
 
+      {potentialLocations.map((location, index) => {
+        const coords = potentialLocationCoords[location.placeId];
+        if (!coords) return null;
+
+        return (
+          <MarkerF
+            key={location.placeId}
+            position={coords}
+            title={location.name}
+            icon={createNumberedIcon(index + 1, isLoaded, "#4299E1")}
+            onClick={() => onSelectPotentialLocation(location)}
+          />
+        );
+      })}
+
+      {highlightedWinery && (
+        <InfoWindowF
+          position={highlightedWinery.coords}
+          onCloseClick={() => onSelectWinery(null)}
+        >
+          <div className="p-2">
+            <h4 className="font-bold text-gray-800">{highlightedWinery.name}</h4>
+            <p className="text-sm text-gray-600">{formatAddress(highlightedWinery.address)}</p>
+            <button
+                onClick={() => onSelectWinery(highlightedWinery)}
+                className="w-full px-3 py-1 mt-2 text-sm font-bold text-white bg-rose-500 rounded-lg hover:bg-rose-600"
+            >
+              View Details
+            </button>
+          </div>
+        </InfoWindowF>
+      )}
+
       {clickedPoi && (
         <InfoWindowF
           position={clickedPoi.coords}
@@ -178,6 +243,15 @@ export default function MapComponent(props: MapProps) {
         </InfoWindowF>
       )}
     </GoogleMap>
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <button
+          onClick={onSearchThisArea}
+          disabled={isSearching}
+          className="px-4 py-2 bg-white border border-gray-300 rounded-md shadow-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSearching ? 'Searching...' : 'Search This Area'}
+        </button>
+      </div>
     </div>
   );
 }
