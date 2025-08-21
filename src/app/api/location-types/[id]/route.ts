@@ -54,14 +54,14 @@ export async function PUT(
           const oldIconUrl = new URL(existingData.icon);
           const oldIconPath = decodeURIComponent(oldIconUrl.pathname).split('/o/')[1];
           if (oldIconPath) {
-            await adminStorage.bucket().file(oldIconPath).delete();
+            await adminStorage.bucket(process.env.FIREBASE_STORAGE_BUCKET).file(oldIconPath).delete();
           }
         } catch (e) {
             console.error("Failed to delete old icon:", e);
         }
       }
 
-      const bucket = adminStorage.bucket();
+      const bucket = adminStorage.bucket(process.env.FIREBASE_STORAGE_BUCKET);
       const buffer = Buffer.from(await iconFile.arrayBuffer());
       const destination = `location-type-icons/${uuidv4()}-${iconFile.name}`;
       const file = bucket.file(destination);
@@ -142,7 +142,13 @@ export async function DELETE(
             const oldIconUrl = new URL(existingData.icon);
             const oldIconPath = decodeURIComponent(oldIconUrl.pathname).split('/o/')[1];
             if (oldIconPath) {
-                await adminStorage.bucket().file(oldIconPath).delete();
+                const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
+                if (!storageBucket) {
+                    console.error("FIREBASE_STORAGE_BUCKET environment variable not set.");
+                    // We can choose to not throw an error here and let the deletion of the DB record proceed
+                } else {
+                    await adminStorage.bucket(storageBucket).file(oldIconPath).delete();
+                }
             }
         } catch (e) {
             console.error("Failed to delete icon:", e);
