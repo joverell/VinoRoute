@@ -297,8 +297,12 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Failed to update location');
         setToast({ message: `Location "${editingLocation.name}" updated successfully!`, type: 'success' });
+        setLocations(prevLocations =>
+            prevLocations.map(loc =>
+                loc.id === editingLocation.id ? editingLocation : loc
+            )
+        );
         setEditingLocation(null);
-        fetchData();
     } catch (err) {
         if (err instanceof Error) setToast({ message: `Error: ${err.message}`, type: 'error' });
         else setToast({ message: 'An unknown error occurred.', type: 'error' });
