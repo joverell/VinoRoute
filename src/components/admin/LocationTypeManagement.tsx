@@ -7,8 +7,8 @@ import { LocationType } from '@/types';
 import { User } from 'firebase/auth';
 import Image from 'next/image';
 import { useToast } from '@/context/ToastContext';
-import { storage } from '@/utils/firebase';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { storage, uploadFileAndGetUrl } from '@/utils/firebase';
+import { ref, deleteObject } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 interface LocationTypeManagementProps {
@@ -69,9 +69,8 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
     try {
       // If a new icon file is selected, upload it
       if (icon) {
-        const storageRef = ref(storage, `location-type-icons/${uuidv4()}-${icon.name}`);
-        const uploadResult = await uploadBytes(storageRef, icon);
-        iconUrl = await getDownloadURL(uploadResult.ref);
+        const path = `location-type-icons/${uuidv4()}-${icon.name}`;
+        iconUrl = await uploadFileAndGetUrl(icon, path);
         newIconUploaded = true;
       }
 
@@ -79,6 +78,7 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
         singular,
         plural,
         icon: iconUrl,
+        mapImageUrl: iconUrl,
       };
 
       const token = await user.getIdToken();

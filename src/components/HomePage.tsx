@@ -33,6 +33,7 @@ const AUSTRALIA_REGION: Region = {
   center: { lat: -25.2744, lng: 133.7751 }, // Center of Australia
 };
 
+// This is the main component for the application.
 export default function HomePage() {
   const [allLocations, setAllLocations] = useState<Winery[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
