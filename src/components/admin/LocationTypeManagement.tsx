@@ -95,14 +95,12 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: `Failed to ${operation} location type` }));
-        throw new Error(errorData.error);
         // If the API call fails and we uploaded a new icon, delete it to prevent orphaned files.
         if (newIconUploaded) {
           const newIconRef = ref(storage, iconUrl);
           await deleteObject(newIconRef);
         }
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: `Failed to ${operation} location type` }));
         throw new Error(errorData.error || `Failed to ${isEditing ? 'update' : 'add'} location type`);
       }
 
