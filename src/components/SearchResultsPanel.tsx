@@ -20,13 +20,21 @@ export default function SearchResultsPanel({
   selectedPotentialLocation,
 }: SearchResultsPanelProps) {
   const [nameFilter, setNameFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
+  const [typeFilters, setTypeFilters] = useState<string[]>([]);
 
   const searchTypes = [...new Set(potentialLocations.map(loc => loc.searchType))];
 
+  const handleTypeFilterChange = (type: string) => {
+    setTypeFilters(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
   const filteredLocations = potentialLocations.filter(loc => {
     const nameMatch = loc.name.toLowerCase().includes(nameFilter.toLowerCase());
-    const typeMatch = typeFilter === '' || loc.searchType === typeFilter;
+    const typeMatch = typeFilters.length === 0 || typeFilters.includes(loc.searchType);
     return nameMatch && typeMatch;
   });
 
@@ -51,21 +59,28 @@ export default function SearchResultsPanel({
           onChange={e => setNameFilter(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
-        <select
-          value={typeFilter}
-          onChange={e => setTypeFilter(e.target.value)}
-          className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md"
-        >
-          <option value="">All Types</option>
-          {searchTypes.map(type => (
-            <option key={type} value={type}>{type}</option>
-          ))}
-        </select>
+        <div className="mt-4">
+          <span className="text-sm font-medium text-gray-700">Filter by Type</span>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {searchTypes.map(type => (
+              <button
+                key={type}
+                onClick={() => handleTypeFilterChange(type)}
+                className={`px-3 py-1 text-sm rounded-full ${
+                  typeFilters.includes(type)
+                    ? 'bg-rose-500 text-white hover:bg-rose-600'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <PotentialLocationsPanel
         locations={filteredLocations}
         onAddLocations={onAddPotentialLocations}
-        onClear={onClearPotentialLocations}
         isAdding={isAddingPotentialLocations}
         onSelect={onSelectPotentialLocation}
         selectedPotentialLocation={selectedPotentialLocation}
