@@ -66,6 +66,7 @@ export interface Region {
   name:string;
   center: { lat: number; lng: number };
   state: string;
+  country: string;
 }
 
 export interface RegionBoundary {
