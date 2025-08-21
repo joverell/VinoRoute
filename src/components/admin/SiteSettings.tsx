@@ -49,29 +49,31 @@ const SiteSettings = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <div>
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <h2 className="text-2xl font-semibold mb-4">Site-wide Settings</h2>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div>
-            <h3 className="text-lg font-medium">Joke Banner</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Show a wine-related joke at the bottom of the home page.
-            </p>
-          </div>
-          <label className="flex items-center cursor-pointer">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={showJokeBanner}
-                onChange={(e) => handleToggleJokeBanner(e.target.checked)}
-                className="sr-only"
-              />
-              <div className={`block w-10 h-6 rounded-full transition-colors ${showJokeBanner ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
-              <div className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${showJokeBanner ? 'translate-x-4' : ''}`}></div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <h3 className="text-lg font-medium">Joke Banner</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Show a wine-related joke at the bottom of the home page.
+              </p>
             </div>
-          </label>
+            <label className="flex items-center cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={showJokeBanner}
+                  onChange={(e) => handleToggleJokeBanner(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`block w-10 h-6 rounded-full transition-colors ${showJokeBanner ? 'bg-teal-500' : 'bg-gray-200'}`}></div>
+                <div className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform ${showJokeBanner ? 'translate-x-4' : ''}`}></div>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
     </div>
