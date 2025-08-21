@@ -161,7 +161,7 @@ export default function HomePage() {
           const stateAbbr = regionParts[regionParts.length - 1];
           const state = stateMap[stateAbbr] || "Other";
           const locationType = locationTypesData.find((lt: LocationType) => lt.id === data.locationTypeId);
-          return { ...data, id: doc.id, state: state, locationType } as Winery;
+          return { ...data, id: doc.id, state: state, locationType, tags: data.tags || [] } as Winery;
         });
 
         setAllLocations(locationsData);

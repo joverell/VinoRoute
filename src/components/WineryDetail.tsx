@@ -118,7 +118,7 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
       </button>
       <h3 className="text-xl font-bold text-gray-800 mb-2">{winery.name}</h3>
       <div className="flex flex-wrap gap-2 mt-2">
-        {winery.tags.map((tag) => (
+        {winery.tags && winery.tags.map((tag) => (
           <span key={tag} className="px-2 py-1 text-xs text-white bg-teal-500 rounded-full">
             {tag}
           </span>
