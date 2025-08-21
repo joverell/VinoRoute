@@ -37,11 +37,8 @@ export async function POST(request: Request) {
         },
       });
 
-      const [url] = await file.getSignedUrl({
-        action: 'read',
-        expires: '03-09-2491',
-      });
-      iconUrl = url;
+      await file.makePublic();
+      iconUrl = file.publicUrl();
     }
 
     const locationTypeData: Omit<LocationType, 'id'> = {
