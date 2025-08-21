@@ -12,10 +12,11 @@ const initializeFirebaseAdmin = () => {
     const projectId = process.env.FIREBASE_PROJECT_ID;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+    const storageBucket = process.env.FIREBASE_STORAGE_BUCKET;
 
-    if (!projectId || !clientEmail || !privateKey) {
+    if (!projectId || !clientEmail || !privateKey || !storageBucket) {
       throw new FirebaseAdminInitializationError(
-        'Firebase Admin SDK credentials are not set in the environment. Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set.'
+        'Firebase Admin SDK credentials are not set in the environment. Please ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY and FIREBASE_STORAGE_BUCKET are set.'
       );
     }
 
@@ -27,7 +28,7 @@ const initializeFirebaseAdmin = () => {
           privateKey: privateKey.replace(/\\n/g, '\n'),
         }),
         databaseURL: `https://vinoroute-e8d8d.firebaseio.com`,
-        storageBucket: `${projectId}.appspot.com`,
+        storageBucket: storageBucket,
       });
     } catch (error: unknown) {
       if (error instanceof Error) {
