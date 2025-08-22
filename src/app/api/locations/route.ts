@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const docRef = locationsCollection.doc(newId.toString());
     await docRef.set(newWinery);
 
-    return NextResponse.json({ success: true, message: 'Location created successfully', id: newId }, { status: 201 });
+    return NextResponse.json(newWinery, { status: 201 });
   } catch (error) {
     console.error('Error creating location:', error);
     if (error instanceof Error && 'code' in error) {

@@ -222,9 +222,9 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
         },
         body: JSON.stringify(wineryData)
       });
-      const data = await response.json();
+      const newWinery = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to add winery');
+        throw new Error(newWinery.error || 'Failed to add winery');
       }
       setToast({ message: `Winery "${wineryData.name}" added successfully!`, type: 'success' });
       // Reset form
@@ -232,8 +232,8 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
       setAddress('');
       setTags('');
       setCoords(null);
-      // Refresh locations
-      await fetchData();
+      // Add the new winery to the locations state
+      setLocations(prevLocations => [...prevLocations, newWinery]);
     } catch (err) {
       if (err instanceof Error) {
         setToast({ message: `Error adding winery: ${err.message}`, type: 'error' });
