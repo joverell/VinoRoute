@@ -10,6 +10,7 @@ import RatingsManagement from '@/components/admin/RatingsManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import WinesManagement from '@/components/admin/WinesManagement';
 import LocationTypeManagement from '@/components/admin/LocationTypeManagement';
+import JokeManagement from '@/components/admin/JokeManagement';
 import SiteSettings from '@/components/admin/SiteSettings';
 import Toast from '@/components/Toast';
 
@@ -511,6 +512,9 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                 <button onClick={() => setActiveTab('siteSettings')} className={`${activeTab === 'siteSettings' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
                   Site Settings
                 </button>
+                <button onClick={() => setActiveTab('jokes')} className={`${activeTab === 'jokes' ? 'border-coral-500 text-coral-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}>
+                  Jokes
+                </button>
               </nav>
             </div>
 
@@ -671,6 +675,10 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
 
             {activeTab === 'siteSettings' && (
               <SiteSettings />
+            )}
+
+            {activeTab === 'jokes' && (
+              <JokeManagement user={user} />
             )}
 
             {editingRegion && (

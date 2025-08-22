@@ -110,3 +110,9 @@ export interface Message {
   userId?: string;
   metadata?: Record<string, unknown>;
 }
+
+export interface Joke {
+  id: string;
+  text: string;
+  createdAt: string;
+}
