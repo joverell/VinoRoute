@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { PotentialLocation } from '@/app/api/search-area/route';
 import PotentialLocationsPanel from './admin/PotentialLocationsPanel';
 
@@ -9,6 +8,11 @@ interface SearchResultsPanelProps {
   isAddingPotentialLocations: boolean;
   onSelectPotentialLocation: (location: PotentialLocation) => void;
   selectedPotentialLocation: PotentialLocation | null;
+  nameFilter: string;
+  onNameFilterChange: (value: string) => void;
+  typeFilters: string[];
+  onTypeFilterChange: (type: string) => void;
+  searchTypes: string[];
 }
 
 export default function SearchResultsPanel({
@@ -18,26 +22,12 @@ export default function SearchResultsPanel({
   isAddingPotentialLocations,
   onSelectPotentialLocation,
   selectedPotentialLocation,
+  nameFilter,
+  onNameFilterChange,
+  typeFilters,
+  onTypeFilterChange,
+  searchTypes,
 }: SearchResultsPanelProps) {
-  const [nameFilter, setNameFilter] = useState('');
-  const [typeFilters, setTypeFilters] = useState<string[]>([]);
-
-  const searchTypes = [...new Set(potentialLocations.map(loc => loc.searchType))];
-
-  const handleTypeFilterChange = (type: string) => {
-    setTypeFilters(prev =>
-      prev.includes(type)
-        ? prev.filter(t => t !== type)
-        : [...prev, type]
-    );
-  };
-
-  const filteredLocations = potentialLocations.filter(loc => {
-    const nameMatch = loc.name.toLowerCase().includes(nameFilter.toLowerCase());
-    const typeMatch = typeFilters.length === 0 || typeFilters.includes(loc.searchType);
-    return nameMatch && typeMatch;
-  });
-
   return (
     <div className="w-full sm:w-96 bg-white shadow-lg p-4 overflow-y-auto z-20 flex-shrink-0 h-full">
       <div className="flex justify-between items-center mb-4">
@@ -56,7 +46,7 @@ export default function SearchResultsPanel({
           type="text"
           placeholder="Filter by name..."
           value={nameFilter}
-          onChange={e => setNameFilter(e.target.value)}
+          onChange={e => onNameFilterChange(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md"
         />
         <div className="mt-4">
@@ -65,7 +55,7 @@ export default function SearchResultsPanel({
             {searchTypes.map(type => (
               <button
                 key={type}
-                onClick={() => handleTypeFilterChange(type)}
+                onClick={() => onTypeFilterChange(type)}
                 className={`px-3 py-1 text-sm rounded-full ${
                   typeFilters.includes(type)
                     ? 'bg-rose-500 text-white hover:bg-rose-600'
@@ -79,7 +69,7 @@ export default function SearchResultsPanel({
         </div>
       </div>
       <PotentialLocationsPanel
-        locations={filteredLocations}
+        locations={potentialLocations}
         onAddLocations={onAddPotentialLocations}
         isAdding={isAddingPotentialLocations}
         onSelect={onSelectPotentialLocation}
