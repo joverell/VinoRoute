@@ -412,7 +412,13 @@ export default function HomePage() {
         }
       }
       setAllLocations(prev => [...prev, ...addedLocations]);
-      setPotentialLocations([]);
+      setPotentialLocations(prev =>
+        prev.map(loc =>
+          addedLocations.some(addedLoc => addedLoc.id === loc.placeId)
+            ? { ...loc, isAdded: true }
+            : loc
+        )
+      );
       setToast({ message: `Successfully added ${addedLocations.length} new locations!`, type: 'success' });
     } catch (error) {
       console.error("Error adding selected locations:", error);

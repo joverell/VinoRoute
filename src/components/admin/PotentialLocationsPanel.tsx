@@ -41,8 +41,8 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, isA
         {locations.map((location, index) => (
           <div
             key={location.placeId}
-            className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${selectedPotentialLocation?.placeId === location.placeId ? 'bg-rose-100' : 'hover:bg-gray-50'}`}
-            onClick={() => onSelect(location)}
+            className={`flex items-center justify-between p-2 rounded-md cursor-pointer ${selectedPotentialLocation?.placeId === location.placeId ? 'bg-rose-100' : 'hover:bg-gray-50'} ${location.isAdded ? 'opacity-50' : ''}`}
+            onClick={() => !location.isAdded && onSelect(location)}
           >
             <div className="flex items-center">
               <span className="flex items-center justify-center w-6 h-6 text-sm font-bold text-white bg-blue-500 rounded-full mr-3">
@@ -50,7 +50,8 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, isA
               </span>
               <input
                 type="checkbox"
-                checked={selected.includes(location.placeId)}
+                checked={selected.includes(location.placeId) || location.isAdded}
+                disabled={location.isAdded}
                 onChange={(e) => {
                   e.stopPropagation();
                   handleToggle(location.placeId);
@@ -62,9 +63,15 @@ export default function PotentialLocationsPanel({ locations, onAddLocations, isA
                 <p className="text-xs text-gray-500">{location.address}</p>
               </div>
             </div>
+            {location.isAdded ? (
+              <span className="text-xs font-semibold uppercase text-white bg-green-500 px-2 py-1 rounded-full">
+                Added
+              </span>
+            ) : (
              <span className="text-xs font-semibold uppercase text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
                 {location.searchType}
             </span>
+            )}
           </div>
         ))}
       </div>

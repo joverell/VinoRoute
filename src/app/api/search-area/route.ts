@@ -9,6 +9,7 @@ export interface PotentialLocation {
     name: string;
     address: string;
     searchType: string;
+    isAdded?: boolean;
 }
 
 interface GooglePlace {
@@ -25,7 +26,7 @@ interface GooglePlace {
 
 async function searchPlacesInBounds(bounds: google.maps.LatLngBoundsLiteral, type: string): Promise<GooglePlace[]> {
   const { north, south, east, west } = bounds;
-  const textQuery = type;
+  const textQuery = `${type} in Australia`;
 
   const url = 'https://places.googleapis.com/v1/places:searchText';
 
