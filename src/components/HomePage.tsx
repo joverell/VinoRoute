@@ -30,6 +30,7 @@ const LOCAL_STORAGE_KEY = 'wineryTourData';
 const AUSTRALIA_REGION: Region = {
   name: "Australia",
   state: "Australia",
+  country: "Australia",
   center: { lat: -25.2744, lng: 133.7751 }, // Center of Australia
 };
 
