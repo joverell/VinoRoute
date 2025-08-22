@@ -6,24 +6,23 @@ import { db } from '@/utils/firebase';
 import Toast from '@/components/Toast';
 
 const SiteSettings = () => {
-  const [showJokeBanner, setShowJokeBanner] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [showJokeBanner, setShowJokeBanner] = useState<boolean | null>(null);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   const settingsDocRef = doc(db, 'settings', 'site');
 
   const fetchSettings = useCallback(async () => {
     try {
-      setLoading(true);
       const docSnap = await getDoc(settingsDocRef);
       if (docSnap.exists()) {
         setShowJokeBanner(docSnap.data().showJokeBanner);
+      } else {
+        setShowJokeBanner(false);
       }
     } catch (error) {
       console.error("Error fetching site settings:", error);
       setToast({ message: 'Failed to fetch site settings.', type: 'error' });
-    } finally {
-      setLoading(false);
+      setShowJokeBanner(false);
     }
   }, [settingsDocRef]);
 
@@ -32,6 +31,7 @@ const SiteSettings = () => {
   }, [fetchSettings]);
 
   const handleToggleJokeBanner = async (enabled: boolean) => {
+    const oldState = showJokeBanner;
     setShowJokeBanner(enabled);
     try {
       await setDoc(settingsDocRef, { showJokeBanner: enabled }, { merge: true });
@@ -40,11 +40,11 @@ const SiteSettings = () => {
       console.error("Error updating site settings:", error);
       setToast({ message: 'Failed to update setting.', type: 'error' });
       // Revert UI on failure
-      setShowJokeBanner(!enabled);
+      setShowJokeBanner(oldState);
     }
   };
 
-  if (loading) {
+  if (showJokeBanner === null) {
     return <div>Loading settings...</div>;
   }
 
