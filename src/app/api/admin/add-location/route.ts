@@ -107,7 +107,7 @@ async function addLocation(db: FirebaseFirestore.Firestore, placeId: string, sea
         name: string;
         coords: { lat: number; lng: number };
         address: string;
-        url: string;
+        website: string;
         phone: string;
         region: string;
         type: 'winery' | 'distillery' | 'custom';
@@ -122,7 +122,7 @@ async function addLocation(db: FirebaseFirestore.Firestore, placeId: string, sea
             lng: details.geometry.location.lng,
         },
         address: details.formatted_address,
-        url: details.website || '',
+        website: details.website || '',
         phone: details.formatted_phone_number || '',
         region: region,
         type: locationType.singular as 'winery' | 'distillery' | 'custom',

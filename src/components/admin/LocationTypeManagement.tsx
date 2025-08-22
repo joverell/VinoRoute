@@ -228,11 +228,7 @@ const LocationTypeManagement = ({ user }: LocationTypeManagementProps) => {
                 ref={fileInputRef}
                 onChange={(e) => setIcon(e.target.files ? e.target.files[0] : null)}
                 className="w-full px-4 py-2 mt-1 bg-gray-50 dark:bg-gray-700 border rounded-md"
-                accept="image/png, image/jpeg, image/gif, image/svg+xml"
               />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Recommended formats: PNG, JPG, GIF, SVG.
-              </p>
               {isEditing && isEditing.icon && (
                 <div className="mt-2">
                   <p className="text-sm">Current icon:</p>
