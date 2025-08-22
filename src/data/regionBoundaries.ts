@@ -338,22 +338,35 @@ export const regionBoundaries: RegionBoundary[] = [
   {
     name: "Yarra Valley, VIC",
     paths: [
-      { lat: -37.5000, lng: 145.3000 },
-      { lat: -37.6000, lng: 145.7000 },
-      { lat: -37.9000, lng: 145.6000 },
-      { lat: -37.8000, lng: 145.2000 }
+      { lat: -37.60, lng: 145.28 },
+      { lat: -37.57, lng: 145.40 },
+      { lat: -37.65, lng: 145.51 },
+      { lat: -37.62, lng: 145.70 },
+      { lat: -37.75, lng: 145.75 },
+      { lat: -37.85, lng: 145.65 },
+      { lat: -37.95, lng: 145.54 },
+      { lat: -37.93, lng: 145.35 },
+      { lat: -37.85, lng: 145.30 },
+      { lat: -37.75, lng: 145.20 },
+      { lat: -37.68, lng: 145.22 },
+      { lat: -37.65, lng: 145.25 },
     ],
   },
   {
     name: "Mornington Peninsula, VIC",
     paths: [
-      { lat: -38.22, lng: 144.85 },
-      { lat: -38.20, lng: 145.10 },
-      { lat: -38.30, lng: 145.18 },
+      { lat: -38.21, lng: 144.88 },
+      { lat: -38.20, lng: 145.05 },
+      { lat: -38.25, lng: 145.15 },
       { lat: -38.35, lng: 145.15 },
+      { lat: -38.41, lng: 145.10 },
       { lat: -38.43, lng: 145.08 },
+      { lat: -38.42, lng: 144.98 },
       { lat: -38.44, lng: 144.90 },
-      { lat: -38.35, lng: 144.75 }
+      { lat: -38.40, lng: 144.80 },
+      { lat: -38.35, lng: 144.75 },
+      { lat: -38.28, lng: 144.80 },
+      { lat: -38.24, lng: 144.82 },
     ],
   },
   {
@@ -363,30 +376,40 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -36.02, lng: 146.58 },
       { lat: -36.05, lng: 146.55 },
       { lat: -36.15, lng: 146.50 },
+      { lat: -36.18, lng: 146.45 },
       { lat: -36.10, lng: 146.35 },
-      { lat: -35.98, lng: 146.35 }
+      { lat: -35.98, lng: 146.35 },
+      { lat: -35.99, lng: 146.45 },
     ],
   },
   {
     name: "Geelong, VIC",
     paths: [
       { lat: -37.95, lng: 144.45 },
+      { lat: -37.90, lng: 144.60 },
       { lat: -38.05, lng: 144.75 },
-      { lat: -38.25, lng: 144.65 },
+      { lat: -38.18, lng: 144.73 },
+      { lat: -38.26, lng: 144.66 },
+      { lat: -38.28, lng: 144.52 },
       { lat: -38.35, lng: 144.35 },
+      { lat: -38.30, lng: 144.15 },
       { lat: -38.20, lng: 144.10 },
-      { lat: -37.90, lng: 144.20 }
+      { lat: -38.05, lng: 144.15 },
+      { lat: -37.90, lng: 144.20 },
+      { lat: -37.88, lng: 144.35 },
     ],
   },
   {
     name: "King Valley, VIC",
     paths: [
       { lat: -36.50, lng: 146.30 },
+      { lat: -36.58, lng: 146.40 },
       { lat: -36.65, lng: 146.45 },
       { lat: -36.85, lng: 146.35 },
       { lat: -36.95, lng: 146.30 },
+      { lat: -36.85, lng: 146.18 },
       { lat: -36.80, lng: 146.20 },
-      { lat: -36.60, lng: 146.25 }
+      { lat: -36.60, lng: 146.25 },
     ],
   },
   {
@@ -394,21 +417,28 @@ export const regionBoundaries: RegionBoundary[] = [
     paths: [
       { lat: -36.65, lng: 144.75 },
       { lat: -36.85, lng: 144.90 },
+      { lat: -37.05, lng: 144.95 },
       { lat: -37.15, lng: 144.85 },
       { lat: -37.20, lng: 144.70 },
+      { lat: -37.15, lng: 144.55 },
       { lat: -37.05, lng: 144.50 },
-      { lat: -36.90, lng: 144.45 }
+      { lat: -36.90, lng: 144.45 },
+      { lat: -36.75, lng: 144.60 },
     ],
   },
   {
     name: "Macedon Ranges, VIC",
     paths: [
       { lat: -37.20, lng: 144.55 },
+      { lat: -37.18, lng: 144.75 },
       { lat: -37.25, lng: 144.80 },
+      { lat: -37.35, lng: 144.95 },
       { lat: -37.40, lng: 144.90 },
       { lat: -37.48, lng: 144.70 },
+      { lat: -37.50, lng: 144.55 },
       { lat: -37.45, lng: 144.45 },
-      { lat: -37.35, lng: 144.35 }
+      { lat: -37.35, lng: 144.35 },
+      { lat: -37.28, lng: 144.40 },
     ],
   },
   {
@@ -418,8 +448,10 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -36.95, lng: 143.55 },
       { lat: -37.10, lng: 143.65 },
       { lat: -37.20, lng: 143.60 },
+      { lat: -37.30, lng: 143.45 },
       { lat: -37.25, lng: 143.25 },
-      { lat: -37.15, lng: 143.20 }
+      { lat: -37.15, lng: 143.20 },
+      { lat: -37.00, lng: 143.25 },
     ],
   },
   {
@@ -428,9 +460,11 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -35.20, lng: 143.50 },
       { lat: -35.25, lng: 143.70 },
       { lat: -35.35, lng: 143.60 },
+      { lat: -35.45, lng: 143.85 },
       { lat: -35.50, lng: 143.90 },
+      { lat: -35.55, lng: 143.60 },
       { lat: -35.45, lng: 143.30 },
-      { lat: -35.30, lng: 143.25 }
+      { lat: -35.30, lng: 143.25 },
     ],
   },
   {
@@ -438,10 +472,12 @@ export const regionBoundaries: RegionBoundary[] = [
     paths: [
       { lat: -34.10, lng: 142.10 },
       { lat: -34.15, lng: 142.60 },
+      { lat: -34.40, lng: 142.90 },
       { lat: -34.60, lng: 142.80 },
+      { lat: -34.80, lng: 142.50 },
       { lat: -34.75, lng: 142.20 },
       { lat: -34.50, lng: 141.80 },
-      { lat: -34.25, lng: 141.75 }
+      { lat: -34.25, lng: 141.75 },
     ],
   },
   {
@@ -449,33 +485,40 @@ export const regionBoundaries: RegionBoundary[] = [
     paths: [
       { lat: -37.80, lng: 147.00 },
       { lat: -37.85, lng: 147.60 },
+      { lat: -38.00, lng: 148.00 },
       { lat: -38.30, lng: 147.10 },
+      { lat: -38.60, lng: 146.80 },
       { lat: -38.50, lng: 146.50 },
       { lat: -38.65, lng: 145.95 },
       { lat: -38.20, lng: 145.80 },
-      { lat: -37.95, lng: 146.50 }
+      { lat: -38.10, lng: 146.50 },
+      { lat: -37.95, lng: 146.50 },
     ],
   },
   {
     name: "Bendigo, VIC",
     paths: [
       { lat: -36.70, lng: 144.20 },
-      { lat: -36.75, lng: 144.40 },
+      { lat: -36.72, lng: 144.45 },
+      { lat: -36.85, lng: 144.50 },
       { lat: -36.90, lng: 144.50 },
       { lat: -37.00, lng: 144.45 },
+      { lat: -37.02, lng: 144.25 },
       { lat: -36.95, lng: 144.10 },
-      { lat: -36.80, lng: 144.15 }
+      { lat: -36.80, lng: 144.15 },
     ],
   },
   {
     name: "Goulburn Valley, VIC",
     paths: [
       { lat: -36.30, lng: 145.40 },
+      { lat: -36.45, lng: 145.65 },
       { lat: -36.60, lng: 145.60 },
       { lat: -36.80, lng: 145.20 },
       { lat: -36.75, lng: 145.10 },
+      { lat: -36.65, lng: 144.95 },
       { lat: -36.50, lng: 145.00 },
-      { lat: -36.35, lng: 145.15 }
+      { lat: -36.35, lng: 145.15 },
     ],
   },
   {
@@ -484,29 +527,38 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -37.10, lng: 145.40 },
       { lat: -37.20, lng: 145.80 },
       { lat: -37.10, lng: 145.95 },
+      { lat: -37.00, lng: 145.80 },
       { lat: -37.30, lng: 145.85 },
+      { lat: -37.40, lng: 145.60 },
       { lat: -37.35, lng: 145.35 },
-      { lat: -37.25, lng: 145.30 }
+      { lat: -37.25, lng: 145.30 },
     ],
   },
   {
     name: "Strathbogie Ranges, VIC",
     paths: [
-      { lat: -36.7000, lng: 145.5000 },
-      { lat: -36.8000, lng: 145.9000 },
-      { lat: -37.0000, lng: 145.8000 },
-      { lat: -36.9000, lng: 145.4000 }
+      { lat: -36.78, lng: 145.18 },
+      { lat: -36.75, lng: 145.40 },
+      { lat: -36.85, lng: 145.55 },
+      { lat: -36.95, lng: 145.58 },
+      { lat: -37.00, lng: 145.50 },
+      { lat: -37.05, lng: 145.38 },
+      { lat: -37.00, lng: 145.10 },
+      { lat: -36.88, lng: 145.10 },
     ],
   },
   {
     name: "Alpine Valleys, VIC",
     paths: [
       { lat: -36.55, lng: 146.60 },
+      { lat: -36.65, lng: 146.90 },
       { lat: -36.73, lng: 147.00 },
       { lat: -36.85, lng: 147.15 },
       { lat: -36.80, lng: 146.80 },
+      { lat: -36.70, lng: 147.20 },
       { lat: -36.60, lng: 146.85 },
-      { lat: -36.70, lng: 146.50 }
+      { lat: -36.70, lng: 146.50 },
+      { lat: -36.60, lng: 146.45 },
     ],
   },
   {
@@ -517,7 +569,8 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -36.42, lng: 146.65 },
       { lat: -36.30, lng: 146.75 },
       { lat: -36.28, lng: 146.65 },
-      { lat: -36.32, lng: 146.60 }
+      { lat: -36.32, lng: 146.60 },
+      { lat: -36.38, lng: 146.62 },
     ],
   },
   {
@@ -528,7 +581,8 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -36.48, lng: 146.32 },
       { lat: -36.50, lng: 146.25 },
       { lat: -36.52, lng: 146.18 },
-      { lat: -36.45, lng: 146.15 }
+      { lat: -36.45, lng: 146.15 },
+      { lat: -36.42, lng: 146.18 },
     ],
   },
   {
@@ -536,10 +590,12 @@ export const regionBoundaries: RegionBoundary[] = [
     paths: [
       { lat: -37.55, lng: 144.55 },
       { lat: -37.50, lng: 144.75 },
+      { lat: -37.54, lng: 144.80 },
       { lat: -37.58, lng: 144.82 },
       { lat: -37.65, lng: 144.75 },
+      { lat: -37.68, lng: 144.68 },
       { lat: -37.65, lng: 144.65 },
-      { lat: -37.60, lng: 144.50 }
+      { lat: -37.60, lng: 144.50 },
     ],
   },
   {
@@ -550,7 +606,9 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -37.40, lng: 142.75 },
       { lat: -37.40, lng: 142.50 },
       { lat: -37.30, lng: 142.40 },
-      { lat: -37.10, lng: 142.40 }
+      { lat: -37.20, lng: 142.30 },
+      { lat: -37.10, lng: 142.40 },
+      { lat: -37.05, lng: 142.60 },
     ],
   },
   {
@@ -559,9 +617,11 @@ export const regionBoundaries: RegionBoundary[] = [
       { lat: -37.60, lng: 142.05 },
       { lat: -37.75, lng: 141.60 },
       { lat: -38.20, lng: 141.90 },
+      { lat: -38.35, lng: 141.60 },
       { lat: -38.10, lng: 141.40 },
       { lat: -37.85, lng: 141.30 },
-      { lat: -37.50, lng: 141.45 }
+      { lat: -37.50, lng: 141.45 },
+      { lat: -37.45, lng: 141.80 },
     ],
   },
   {
