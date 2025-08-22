@@ -2,6 +2,7 @@ import React from 'react';
 import { User } from 'firebase/auth';
 import Auth from './Auth';
 import Image from 'next/image';
+import Link from 'next/link';
 
 
 interface BannerProps {
@@ -47,6 +48,11 @@ const Banner = ({
             </div>
             <div className="border-l border-gray-600 h-10 mx-4"></div>
           </>
+        )}
+        {isAdmin && (
+          <Link href="/" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            &larr; Back to Main Page
+          </Link>
         )}
         <Auth user={user} isAdmin={isAdmin} />
       </div>
