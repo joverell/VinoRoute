@@ -3,52 +3,34 @@
 import { useState, useEffect } from 'react';
 
 const JokeOfTheDay = () => {
-  const [jokes, setJokes] = useState<any[]>([]);
-  const [currentJokeIndex, setCurrentJokeIndex] = useState(0);
-  const [fade, setFade] = useState(true);
+  const [joke, setJoke] = useState('');
 
   useEffect(() => {
-    const fetchJokes = async () => {
+    const fetchJoke = async () => {
       try {
-        const response = await fetch('https://v2.jokeapi.dev/joke/Any?contains=wine&amount=10&safe-mode');
-        const data = await response.json();
-        if (data.jokes && data.jokes.length > 0) {
-          setJokes(data.jokes);
-        } else {
-          setJokes([{ type: 'single', joke: 'What did the grape say when it was crushed? Nothing, it just let out a little wine!' }]);
+        const response = await fetch('/api/jokes/random');
+        if (!response.ok) {
+          throw new Error('Failed to fetch joke');
         }
+        const data = await response.json();
+        setJoke(data.text);
       } catch (error) {
-        console.error('Error fetching jokes:', error);
-        setJokes([{ type: 'single', joke: 'What did the grape say when it was crushed? Nothing, it just let out a little wine!' }]);
+        console.error('Error fetching joke:', error);
+        // You can set a fallback joke here if you want
+        setJoke('What did the grape say when it was crushed? Nothing, it just let out a little wine!');
       }
     };
 
-    fetchJokes();
+    fetchJoke();
   }, []);
 
-  useEffect(() => {
-    if (jokes.length > 1) {
-      const timer = setInterval(() => {
-        setFade(false);
-        setTimeout(() => {
-          setCurrentJokeIndex((prevIndex) => (prevIndex + 1) % jokes.length);
-          setFade(true);
-        }, 500); // half a second for fade out
-      }, 10000);
-      return () => clearInterval(timer);
-    }
-  }, [jokes]);
-
-  if (jokes.length === 0) {
+  if (!joke) {
     return null;
   }
 
-  const currentJoke = jokes[currentJokeIndex];
-  const jokeText = currentJoke.type === 'single' ? currentJoke.joke : `${currentJoke.setup} ... ${currentJoke.delivery}`;
-
   return (
     <div className="joke-container">
-      <p className={`joke-text ${fade ? 'fade-in' : 'fade-out'}`}>“{jokeText}”</p>
+      <p className="joke-text fade-in">“{joke}”</p>
     </div>
   );
 };
