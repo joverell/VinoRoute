@@ -217,7 +217,12 @@ export default function HomePage() {
               if (regionsData.length > 0) setSelectedRegion(regionsData[0]);
             }
           } else {
+            // Set default region and location type filter if no saved data
             if (regionsData.length > 0) setSelectedRegion(regionsData[0]);
+            const wineryType = locationTypesData.find(lt => lt.singular === 'Winery');
+            if (wineryType) {
+              setLocationTypeFilters([wineryType.id]);
+            }
           }
         }
       } catch (error) {
