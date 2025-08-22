@@ -26,7 +26,7 @@ export function useFirestoreData() {
             const stateAbbr = regionParts[regionParts.length - 1];
             const state = stateMap[stateAbbr] || "Other";
             
-            regionMap.set(loc.region, { name: loc.region, center: loc.coords, state: state });
+            regionMap.set(loc.region, { name: loc.region, center: loc.coords, state: state, country: "Australia" });
           }
         });
         const dynamicRegions = Array.from(regionMap.values()).sort((a, b) => a.state.localeCompare(b.state) || a.name.localeCompare(b.name));
