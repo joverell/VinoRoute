@@ -70,7 +70,7 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
 
   const fetchRatings = useCallback(async () => {
     try {
-      const response = await fetch(`/api/wineries/${winery.id}/ratings`);
+      const response = await fetch(`/api/ratings/${winery.id}`);
       if (response.ok) {
         const data = await response.json();
         setRatings(data);
