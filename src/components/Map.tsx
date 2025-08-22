@@ -110,6 +110,7 @@ export default function MapComponent(props: MapProps) {
   return (
     <div className="relative w-full h-full">
       <Map
+        mapId="DEMO_MAP_ID"
         defaultCenter={selectedRegion.center}
         defaultZoom={10}
         streetViewControl={false}
