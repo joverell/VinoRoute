@@ -5,7 +5,7 @@ import { Region, Winery, Wine, LocationType } from '@/types';
 import { User } from 'firebase/auth';
 import WinerySearch from '@/components/WinerySearch';
 import { useGoogleMaps } from '@/app/GoogleMapsProvider';
-import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
+import { useAutocomplete } from '@/hooks/useAutocomplete';
 import RatingsManagement from '@/components/admin/RatingsManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import WinesManagement from '@/components/admin/WinesManagement';
@@ -18,75 +18,59 @@ interface AdminPageClientProps {
   user: User | null;
 }
 
-interface PlacesAutocompleteProps {
-  onAddressSelect: (address: string, lat: number, lng: number) => void;
-  onAddressChange: (address: string) => void;
-  initialValue?: string;
-}
+const PlacesAutocomplete = ({ onAddressSelect, onAddressChange, initialValue }: { onAddressSelect: (address: string, lat: number, lng: number) => void, onAddressChange: (address: string) => void, initialValue?: string }) => {
+  const [address, setAddress] = useState(initialValue || '');
+  const { suggestions, loading, error, fetchSuggestions, setSuggestions } = useAutocomplete();
+  const { isLoaded } = useGoogleMaps();
 
-const PlacesAutocomplete = ({ onAddressSelect, onAddressChange, initialValue }: PlacesAutocompleteProps) => {
-  const {
-    ready,
-    value,
-    suggestions: { status, data },
-    setValue,
-    clearSuggestions,
-  } = usePlacesAutocomplete({
-    requestOptions: {
-      componentRestrictions: { country: 'au' },
-    },
-    debounce: 300,
-    defaultValue: initialValue || '',
-  });
-
-  const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
-    onAddressChange(e.target.value);
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAddress(value);
+    onAddressChange(value);
+    fetchSuggestions(value, { includedRegionCodes: ['au'] });
   };
 
-  const handleSelect = ({ description }: { description: string }) => () => {
-    setValue(description, false);
+  const handleSelect = (suggestion: google.maps.places.AutocompleteSuggestion) => {
+    const mainText = suggestion.placePrediction?.mainText?.text ?? '';
+    const secondaryText = suggestion.placePrediction?.secondaryText?.text ?? '';
+    const description = [mainText, secondaryText].filter(Boolean).join(', ');
+    setAddress(description);
     onAddressChange(description);
-    clearSuggestions();
+    setSuggestions([]);
 
-    getGeocode({ address: description })
-      .then((results) => getLatLng(results[0]))
-      .then(({ lat, lng }) => {
-        onAddressSelect(description, lat, lng);
-      })
-      .catch((error) => {
-        console.log('😱 Error: ', error);
-      });
-  };
-
-  const renderSuggestions = () =>
-    data.map((suggestion) => {
-      const {
-        place_id,
-        structured_formatting: { main_text, secondary_text },
-      } = suggestion;
-
-      return (
-        <li
-          key={place_id}
-          onClick={handleSelect(suggestion)}
-          className="p-2 cursor-pointer hover:bg-gray-100"
-        >
-          <strong>{main_text}</strong> <small>{secondary_text}</small>
-        </li>
-      );
+    if (!isLoaded) return;
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ placeId: suggestion.placePrediction?.placeId }, (results, status) => {
+      if (status === 'OK' && results && results[0]) {
+        const { lat, lng } = results[0].geometry.location;
+        onAddressSelect(description, lat(), lng());
+      }
     });
+  };
 
   return (
     <div className="relative">
       <input
-        value={value}
-        onChange={handleInput}
-        disabled={!ready}
+        value={address}
+        onChange={handleInputChange}
         placeholder="Address"
         className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500"
       />
-      {status === 'OK' && <ul className="absolute z-10 w-full bg-white border rounded-md mt-1">{renderSuggestions()}</ul>}
+      {loading && <div className="p-2">Loading...</div>}
+      {error && <div className="p-2 text-red-500">{error}</div>}
+      {suggestions.length > 0 && (
+        <ul className="absolute z-10 w-full bg-white border rounded-md mt-1">
+          {suggestions.map((suggestion) => (
+            <li
+              key={suggestion.placePrediction?.placeId}
+              onClick={() => handleSelect(suggestion)}
+              className="p-2 cursor-pointer hover:bg-gray-100"
+            >
+              <strong>{suggestion.placePrediction?.mainText?.text ?? ''}</strong> <small>{suggestion.placePrediction?.secondaryText?.text ?? ''}</small>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };

@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Autocomplete } from '@react-google-maps/api';
+import { useState, useEffect } from 'react';
+import { useAutocomplete } from '../hooks/useAutocomplete';
 import { PrepopulatedStop } from './HomePage';
-import { useGoogleMaps } from '../app/GoogleMapsProvider';
 
 interface AddCustomStopFormProps {
   onAdd: (name: string, address: string, duration: number) => void;
@@ -16,25 +15,33 @@ export default function AddCustomStopForm({ onAdd, onCancel, defaultDuration, pr
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [duration, setDuration] = useState(defaultDuration);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const { isLoaded } = useGoogleMaps();
+  const { suggestions, loading, error, fetchSuggestions, setSuggestions } = useAutocomplete();
 
   useEffect(() => {
     if (prepopulatedData) {
       setName(prepopulatedData.name);
       setAddress(prepopulatedData.address);
-      if (inputRef.current) {
-        inputRef.current.value = prepopulatedData.address;
-      }
     }
   }, [prepopulatedData]);
 
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAddress(value);
+    fetchSuggestions(value, { includedRegionCodes: ['au'] });
+  };
+
+  const handleSuggestionClick = (suggestion: google.maps.places.AutocompleteSuggestion) => {
+    const mainText = suggestion.placePrediction?.mainText?.text ?? '';
+    const secondaryText = suggestion.placePrediction?.secondaryText?.text ?? '';
+    const fullAddress = [mainText, secondaryText].filter(Boolean).join(', ');
+    setAddress(fullAddress);
+    setSuggestions([]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalAddress = inputRef.current?.value || address;
-    if (name && finalAddress) {
-      onAdd(name, finalAddress, duration);
+    if (name && address) {
+      onAdd(name, address, duration);
     }
   };
 
@@ -49,29 +56,31 @@ export default function AddCustomStopForm({ onAdd, onCancel, defaultDuration, pr
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
           required
         />
-        {isLoaded ? (
-          <Autocomplete
-            onLoad={(ref) => (autocompleteRef.current = ref)}
-            options={{ types: ['establishment', 'geocode'], componentRestrictions: { country: 'AU' } }}
-          >
-            <input
-              type="text"
-              placeholder="Address"
-              ref={inputRef}
-              defaultValue={address}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
-              required
-            />
-          </Autocomplete>
-        ) : (
+        <div className="relative">
           <input
             type="text"
             placeholder="Address"
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-100"
-            defaultValue={address}
-            disabled
+            value={address}
+            onChange={handleAddressChange}
+            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md"
+            required
           />
-        )}
+          {loading && <div className="p-2">Loading...</div>}
+          {error && <div className="p-2 text-red-500">{error}</div>}
+          {suggestions.length > 0 && (
+            <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1">
+              {suggestions.map((suggestion) => (
+                <li
+                  key={suggestion.placePrediction?.placeId}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="p-2 cursor-pointer hover:bg-gray-100"
+                >
+                  {`${suggestion.placePrediction?.mainText?.text ?? ''}, ${suggestion.placePrediction?.secondaryText?.text ?? ''}`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <div>
           <label className="text-xs text-gray-500">Duration (mins)</label>
           <input
