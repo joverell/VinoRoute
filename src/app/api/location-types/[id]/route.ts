@@ -18,7 +18,7 @@ export async function PUT(
     const token = authorization.split("Bearer ")[1];
     await adminAuth.verifyIdToken(token);
 
-    const { singular, plural, icon, mapImageUrl } = await request.json();
+    const { singular, plural, icon } = await request.json();
 
     if (!singular || !plural) {
       return NextResponse.json(
@@ -37,7 +37,6 @@ export async function PUT(
         singular,
         plural,
         icon,
-        mapImageUrl,
     };
 
     await docRef.update(locationTypeData);

@@ -50,8 +50,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
     try {
-        // This is a generic update handler. It will update any fields passed in the request body
-        // that are part of the Winery type. This includes the `url` field.
         const locationData: Partial<Winery> = await request.json();
         const docRef = adminDb.collection('locations').doc(id);
         await docRef.update(locationData);

@@ -52,6 +52,7 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [ratings, setRatings] = useState<PopulatedRating[]>([]);
+
   const [isAdmin, setIsAdmin] = useState(false);
   const [url, setUrl] = useState(winery.url || '');
 
@@ -84,28 +85,6 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
       fetchRatings();
     }
   }, [winery.id, fetchRatings]);
-
-  const handleUrlUpdate = async () => {
-    if (!user) return;
-    try {
-      const token = await user.getIdToken();
-      const response = await fetch(`/api/locations/${winery.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ url }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to update URL');
-      }
-      alert('URL updated successfully!');
-    } catch (error) {
-      console.error('Error updating URL:', error);
-      alert('Failed to update URL.');
-    }
-  };
 
   const handleRatingSubmit = async () => {
     if (!user) {
@@ -171,40 +150,8 @@ export default function WineryDetail({ winery, onClearSelection, onAddToTrip, on
           {winery.state && <p className="flex items-center"><span className="w-20 font-bold shrink-0">State</span><span className="text-gray-800">{winery.state}</span></p>}
           <p className="flex items-center"><span className="w-20 font-bold shrink-0">Region</span><span className="text-gray-800">{winery.region}</span></p>
           <p className="flex items-center"><span className="w-20 font-bold shrink-0">Type</span><span className="capitalize text-gray-800">{winery.type}</span></p>
-          {!isAdmin && winery.url && (
-            <p className="flex items-start">
-              <span className="w-20 font-bold shrink-0">Website</span>
-              <a href={winery.url} target="_blank" rel="noopener noreferrer" className="text-rose-500 hover:underline break-all">
-                {winery.url}
-              </a>
-            </p>
-          )}
-          {isAdmin && (
-            <div className="flex items-center mt-2">
-              <label htmlFor="winery-url" className="w-20 font-bold shrink-0">Website</label>
-              <input
-                id="winery-url"
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="w-full p-2 border rounded-md"
-                placeholder="https://example.com"
-              />
-            </div>
-          )}
         </div>
       </div>
-
-      {isAdmin && (
-        <div className="mt-4">
-            <button
-                onClick={handleUrlUpdate}
-                className="w-full px-4 py-2 font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600"
-            >
-                Save Changes
-            </button>
-        </div>
-      )}
 
       {winery.wines && winery.wines.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-200">

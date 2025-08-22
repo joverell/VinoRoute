@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/utils/firebase';
 import Toast from '@/components/Toast';
@@ -10,7 +10,7 @@ const SiteSettings = () => {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
-  const settingsDocRef = useMemo(() => doc(db, 'settings', 'site'), []);
+  const settingsDocRef = doc(db, 'settings', 'site');
 
   const fetchSettings = useCallback(async () => {
     try {
