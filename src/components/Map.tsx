@@ -1,17 +1,20 @@
 'use client';
 
-import { GoogleMap, MarkerF, DirectionsRenderer, InfoWindowF, Polygon } from '@react-google-maps/api';
+import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary, Pin } from '@vis.gl/react-google-maps';
 import { Winery } from '@/types';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatAddress } from '@/utils/formatAddress';
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { Region } from '@/types';
 import { ClickedPoi } from './HomePage';
 import { regionBoundaries } from '@/data/regionBoundaries';
 import { PotentialLocation } from '@/app/api/search-area/route';
+import Polygon from './Polygon';
+import Directions from './Directions';
+import NumberedPin from './NumberedPin';
+import WineryPin from './WineryPin';
 
 interface MapProps {
-  isLoaded: boolean;
   itinerary: ItineraryStop[] | null;
   directions: google.maps.DirectionsResult | null;
   onSelectWinery: (winery: Winery | null) => void;
@@ -31,135 +34,108 @@ interface MapProps {
   selectedWinery: Winery | null;
 }
 
-const createNumberedIcon = (number: number, isLoaded: boolean, color = "#FF5757") => {
-  if (!isLoaded) return undefined;
-  const svg = `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="14" fill="${color}" stroke="white" stroke-width="2"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">${number}</text></svg>`;
-  return {
-    url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-    scaledSize: new google.maps.Size(32, 32),
-    anchor: new google.maps.Point(16, 16),
-  };
-};
-
 export default function MapComponent(props: MapProps) {
   const {
-    isLoaded, itinerary, directions, onSelectWinery, availableWineries,
+    itinerary, directions, onSelectWinery, availableWineries,
     selectedRegion, clickedPoi, onMapClick, onAddPoiToTrip, showRegionOverlay,
     mapBounds, onBoundsChanged, onSearchThisArea, isSearching, potentialLocations = [],
     onSelectPotentialLocation, highlightedWinery, selectedWinery
   } = props;
 
-  const mapRef = useRef<google.maps.Map | null>(null);
+  const map = useMap();
+  const mapsLibrary = useMapsLibrary('maps');
+  const routesLibrary = useMapsLibrary('routes');
+  const placesLibrary = useMapsLibrary('places');
+  const geocodingLibrary = useMapsLibrary('geocoding');
+
   const [potentialLocationCoords, setPotentialLocationCoords] = useState<{[key: string]: google.maps.LatLngLiteral}>({});
 
-  const getMarkerIcon = (winery: Winery, isSelected: boolean): google.maps.Icon | google.maps.Symbol => {
-    // Use the mapImageUrl from the location type if it exists
-    if (winery.locationType && winery.locationType.mapImageUrl) {
-      return {
-        url: winery.locationType.mapImageUrl,
-        scaledSize: new google.maps.Size(isSelected ? 48 : 32, isSelected ? 48 : 32),
-        anchor: new google.maps.Point(isSelected ? 24 : 16, isSelected ? 24 : 16),
-      };
-    }
-    // Default icon
-    return {
-      path: 'M8.5,1.5 C8.5,1.5 8.5,4.5 9.5,4.5 C10.5,4.5 10.5,1.5 10.5,1.5 M8,5 L11,5 L11,6 C11,6 12,6.5 12,8 L12,18 C12,19 11,20 9.5,20 C8,20 7,19 7,18 L7,8 C7,6.5 8,6 8,6 L8,5 M9.5,7 C9.5,7 9,7.5 9,8 L10,8 C10,7.5 9.5,7 9.5,7',
-      fillColor: isSelected ? '#000000' : '#FF5757',
-      fillOpacity: 1.0,
-      strokeWeight: 1,
-      strokeColor: '#FFFFFF',
-      rotation: 0,
-      scale: isSelected ? 2.5 : 1.5,
-      anchor: new google.maps.Point(9.5, 20),
-    };
-  };
-
   useEffect(() => {
-    if (mapRef.current) {
+    if (map) {
       if (directions) {
         const bounds = new window.google.maps.LatLngBounds();
         directions.routes[0].legs.forEach(leg => {
           bounds.extend(leg.start_location);
           bounds.extend(leg.end_location);
         });
-        mapRef.current.fitBounds(bounds);
+        map.fitBounds(bounds);
       } else if (mapBounds) {
-        mapRef.current.fitBounds(mapBounds);
+        map.fitBounds(mapBounds);
       } else {
-        mapRef.current.panTo(selectedRegion.center);
-        mapRef.current.setZoom(10);
+        map.panTo(selectedRegion.center);
+        map.setZoom(10);
       }
     }
-  }, [directions, selectedRegion, mapBounds]);
+  }, [directions, selectedRegion, mapBounds, map]);
 
   useEffect(() => {
-    let isCancelled = false;
-
-    if (isLoaded && potentialLocations.length > 0) {
-      const geocoder = new window.google.maps.Geocoder();
-      const newCoords: { [key: string]: google.maps.LatLngLiteral } = {};
-      let processedCount = 0;
-
-      potentialLocations.forEach(location => {
-        geocoder.geocode({ 'placeId': location.placeId }, (results, status) => {
-          if (isCancelled) return;
-
-          if (status === 'OK' && results && results[0]) {
-            newCoords[location.placeId] = {
-              lat: results[0].geometry.location.lat(),
-              lng: results[0].geometry.location.lng(),
-            };
-          }
-          processedCount++;
-          if (processedCount === potentialLocations.length) {
-            if (!isCancelled) {
-              setPotentialLocationCoords(newCoords);
-            }
-          }
-        });
-      });
-    } else if (isLoaded) {
-      setPotentialLocationCoords({});
+    if (!geocodingLibrary || potentialLocations.length === 0) {
+        setPotentialLocationCoords({});
+        return;
     }
 
+    const geocoder = new geocodingLibrary.Geocoder();
+    const newCoords: { [key: string]: google.maps.LatLngLiteral } = {};
+    let processedCount = 0;
+    let isCancelled = false;
+
+    potentialLocations.forEach(location => {
+        geocoder.geocode({ 'placeId': location.placeId }, (results, status) => {
+            if (isCancelled) return;
+
+            if (status === 'OK' && results && results[0]) {
+                newCoords[location.placeId] = {
+                    lat: results[0].geometry.location.lat(),
+                    lng: results[0].geometry.location.lng(),
+                };
+            }
+            processedCount++;
+            if (processedCount === potentialLocations.length) {
+                if (!isCancelled) {
+                    setPotentialLocationCoords(newCoords);
+                }
+            }
+        });
+    });
+
     return () => {
-      isCancelled = true;
+        isCancelled = true;
     };
-  }, [isLoaded, potentialLocations]);
+}, [geocodingLibrary, potentialLocations]);
+
 
   const itineraryWineryIds = new Set(itinerary?.map(stop => stop.winery.id) || []);
   const otherAvailableWineries = availableWineries.filter(winery => !itineraryWineryIds.has(winery.id));
 
   return (
     <div className="relative w-full h-full">
-      <GoogleMap
-        mapContainerStyle={{ width: '100%', height: '100%' }}
-        center={selectedRegion.center}
-        zoom={10}
-        options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false }}
-        onLoad={(map) => { mapRef.current = map; }}
-        onIdle={() => {
-          if (mapRef.current) {
-            onBoundsChanged(mapRef.current.getBounds() || null);
-          }
+      <Map
+        defaultCenter={selectedRegion.center}
+        defaultZoom={10}
+        streetViewControl={false}
+        mapTypeControl={false}
+        fullscreenControl={false}
+        onIdle={(e) => {
+            if (e.map) {
+                onBoundsChanged(e.map.getBounds() || null);
+            }
         }}
         onClick={(e) => {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const event = e as any;
-        if (event.placeId) {
-          event.stop();
-          const latLng = event.latLng!.toJSON();
-          const service = new window.google.maps.places.PlacesService(mapRef.current!);
-          service.getDetails({ placeId: event.placeId, fields: ['name'] }, (place, status) => {
-            if (status === 'OK' && place && place.name) {
-              onMapClick({ name: place.name, coords: latLng });
+            if (e.detail.placeId && e.detail.latLng) {
+                const latLng = { lat: e.detail.latLng.lat, lng: e.detail.latLng.lng };
+                if (!placesLibrary || !map) return;
+                const service = new placesLibrary.PlacesService(map);
+                service.getDetails({ placeId: e.detail.placeId, fields: ['name'] }, (place, status) => {
+                    if (status === 'OK' && place && place.name) {
+                        onMapClick({ name: place.name, coords: latLng });
+                    }
+                });
+            } else {
+                onSelectWinery(null);
+                onMapClick(null);
             }
-          });
-        } else {
-          onSelectWinery(null);
-          onMapClick(null);
-        }
-      }}
+        }}
+        style={{ width: '100%', height: '100%' }}
     >
       {showRegionOverlay && regionBoundaries.map(region => (
         <Polygon
@@ -176,34 +152,34 @@ export default function MapComponent(props: MapProps) {
         />
       ))}
 
-      {directions && <DirectionsRenderer directions={directions} options={{ suppressMarkers: true, polylineOptions: { strokeColor: '#FF5757', strokeWeight: 5 } }} />}
+      {directions && <Directions directions={directions} options={{ suppressMarkers: true, polylineOptions: { strokeColor: '#FF5757', strokeWeight: 5 } }} />}
       
       {otherAvailableWineries.map((winery) => (
-        <MarkerF
+        <AdvancedMarker
           key={winery.id}
           position={winery.coords}
           title={winery.name}
-          icon={getMarkerIcon(winery, selectedWinery?.id === winery.id)}
-          onClick={(e) => {
-            e.stop();
+          onClick={() => {
             onSelectWinery(winery);
             onMapClick(null);
           }}
-        />
+        >
+          <WineryPin winery={winery} isSelected={selectedWinery?.id === winery.id} />
+        </AdvancedMarker>
       ))}
       
       {itinerary && itinerary.map((stop, index) => (
-        <MarkerF
+        <AdvancedMarker
           key={stop.winery.id}
           position={stop.winery.coords}
           title={stop.winery.name}
-          icon={createNumberedIcon(index + 1, isLoaded, selectedWinery?.id === stop.winery.id ? '#000000' : '#FF5757')}
-          onClick={(e) => {
-            e.stop();
+          onClick={() => {
             onSelectWinery(stop.winery);
             onMapClick(null);
           }}
-        />
+        >
+          <NumberedPin number={index + 1} color={selectedWinery?.id === stop.winery.id ? '#000000' : '#FF5757'} />
+        </AdvancedMarker>
       ))}
 
       {potentialLocations.map((location, index) => {
@@ -211,18 +187,19 @@ export default function MapComponent(props: MapProps) {
         if (!coords) return null;
 
         return (
-          <MarkerF
+          <AdvancedMarker
             key={location.placeId}
             position={coords}
             title={location.name}
-            icon={createNumberedIcon(index + 1, isLoaded, "#4299E1")}
             onClick={() => onSelectPotentialLocation(location)}
-          />
+          >
+            <NumberedPin number={index + 1} color="#4299E1" />
+          </AdvancedMarker>
         );
       })}
 
       {highlightedWinery && (
-        <InfoWindowF
+        <InfoWindow
           position={highlightedWinery.coords}
           onCloseClick={() => onSelectWinery(null)}
         >
@@ -236,11 +213,11 @@ export default function MapComponent(props: MapProps) {
               View Details
             </button>
           </div>
-        </InfoWindowF>
+        </InfoWindow>
       )}
 
       {clickedPoi && (
-        <InfoWindowF
+        <InfoWindow
           position={clickedPoi.coords}
           onCloseClick={() => onMapClick(null)}
         >
@@ -253,9 +230,9 @@ export default function MapComponent(props: MapProps) {
               Add to My Tour
             </button>
           </div>
-        </InfoWindowF>
+        </InfoWindow>
       )}
-    </GoogleMap>
+    </Map>
     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
         <button
           onClick={onSearchThisArea}

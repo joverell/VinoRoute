@@ -14,7 +14,7 @@ import Banner from './Banner';
 import { db, auth } from '@/utils/firebase';
 import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { useGoogleMaps } from '@/app/GoogleMapsProvider';
+import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import { PotentialLocation } from '@/app/api/search-area/route';
 import Toast from './Toast';
 
@@ -72,17 +72,19 @@ export default function HomePage() {
 
   const searchParams = useSearchParams();
 
-  const { isLoaded } = useGoogleMaps();
-
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const routesLibrary = useMapsLibrary('routes');
+  const geocodingLibrary = useMapsLibrary('geocoding');
 
   useEffect(() => {
-    if (isLoaded) {
-      directionsServiceRef.current = new window.google.maps.DirectionsService();
-      geocoderRef.current = new window.google.maps.Geocoder();
+    if (routesLibrary) {
+      directionsServiceRef.current = new routesLibrary.DirectionsService();
     }
-  }, [isLoaded]);
+    if (geocodingLibrary) {
+      geocoderRef.current = new geocodingLibrary.Geocoder();
+    }
+  }, [routesLibrary, geocodingLibrary]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -155,7 +157,7 @@ export default function HomePage() {
         const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
 
         const locationTypesResponse = await fetch('/api/location-types');
-        const locationTypesData = await locationTypesResponse.json();
+        const locationTypesData: LocationType[] = await locationTypesResponse.json();
         setLocationTypes(locationTypesData);
 
         const locationsData = querySnapshot.docs.map(doc => {
@@ -267,7 +269,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const recalculate = async () => {
-      if (!isLoaded || !directionsServiceRef.current) return;
+      if (!directionsServiceRef.current) return;
       if (tripStops.length < 2 || !startTime) {
         setDirections(null);
         if (tripStops.length === 1 && startTime) {
@@ -289,7 +291,7 @@ export default function HomePage() {
       }
     };
     recalculate();
-  }, [tripStops, startTime, isLoaded]);
+  }, [tripStops, startTime]);
 
   const handleAddToTrip = (winery: Winery) => {
     if (!tripStops.find(stop => stop.winery.id === winery.id)) {
@@ -604,7 +606,7 @@ export default function HomePage() {
     return nameMatch && typeMatch;
   });
 
-  if (!selectedRegion || !isLoaded) {
+  if (!selectedRegion) {
     return <div>Loading map data...</div>;
   }
 
@@ -654,7 +656,6 @@ export default function HomePage() {
         />
         <div className="flex-grow h-full">
           <MapComponent
-            isLoaded={isLoaded}
             itinerary={itinerary}
             directions={directions}
             onSelectWinery={setSelectedWinery}
