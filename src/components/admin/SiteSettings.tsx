@@ -6,7 +6,7 @@ import { db } from '@/utils/firebase';
 import Toast from '@/components/Toast';
 
 const SiteSettings = () => {
-  const [showJokeBanner, setShowJokeBanner] = useState(true);
+  const [showJokeBanner, setShowJokeBanner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
