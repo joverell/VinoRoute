@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Region, Winery, Wine, LocationType } from '@/types';
 import { User } from 'firebase/auth';
 import WinerySearch from '@/components/WinerySearch';
-import { useGoogleMaps } from '@/app/GoogleMapsProvider';
 import { useAutocomplete } from '@/hooks/useAutocomplete';
+import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import RatingsManagement from '@/components/admin/RatingsManagement';
 import UserManagement from '@/components/admin/UserManagement';
 import WinesManagement from '@/components/admin/WinesManagement';
@@ -21,7 +21,7 @@ interface AdminPageClientProps {
 const PlacesAutocomplete = ({ onAddressSelect, onAddressChange, initialValue }: { onAddressSelect: (address: string, lat: number, lng: number) => void, onAddressChange: (address: string) => void, initialValue?: string }) => {
   const [address, setAddress] = useState(initialValue || '');
   const { suggestions, loading, error, fetchSuggestions, setSuggestions } = useAutocomplete();
-  const { isLoaded } = useGoogleMaps();
+  const geocodingLibrary = useMapsLibrary('geocoding');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -38,8 +38,8 @@ const PlacesAutocomplete = ({ onAddressSelect, onAddressChange, initialValue }: 
     onAddressChange(description);
     setSuggestions([]);
 
-    if (!isLoaded) return;
-    const geocoder = new window.google.maps.Geocoder();
+    if (!geocodingLibrary) return;
+    const geocoder = new geocodingLibrary.Geocoder();
     geocoder.geocode({ placeId: suggestion.placePrediction?.placeId }, (results, status) => {
       if (status === 'OK' && results && results[0]) {
         const { lat, lng } = results[0].geometry.location;
@@ -111,13 +111,13 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
   const [coords, setCoords] = useState<{lat: number, lng: number} | null>(null);
 
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
-  const { isLoaded } = useGoogleMaps();
+  const geocodingLibrary = useMapsLibrary('geocoding');
 
   useEffect(() => {
-    if (isLoaded) {
-      geocoderRef.current = new window.google.maps.Geocoder();
+    if (geocodingLibrary) {
+      geocoderRef.current = new geocodingLibrary.Geocoder();
     }
-  }, [isLoaded]);
+  }, [geocodingLibrary]);
 
   useEffect(() => {
     const savedTab = localStorage.getItem('adminActiveTab');
@@ -250,7 +250,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
       newWineryData.coords = coords;
       await addWineryToDatabase(newWineryData);
     } else {
-      if (!isLoaded || !geocoderRef.current) {
+      if (!geocodingLibrary || !geocoderRef.current) {
         alert('Google Maps API not loaded yet. Please try again in a moment.');
         return;
       }
@@ -528,7 +528,7 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                         {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.singular}</option>)}
                       </select>
                       <input type="text" placeholder="Tags (comma-separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md focus:outline-none focus:ring-2 focus:ring-coral-500" />
-                      <button type="submit" disabled={isSubmitting || !isLoaded} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
+                      <button type="submit" disabled={isSubmitting || !geocodingLibrary} className="w-full bg-coral-500 text-white font-bold py-2 px-4 rounded-md hover:bg-coral-600 disabled:bg-gray-400">
                         {isSubmitting ? 'Adding...' : 'Add Winery'}
                       </button>
                     </form>

@@ -12,7 +12,7 @@
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
     "@googlemaps/places": "^2.1.0",
-    "@react-google-maps/api": "^2.20.7",
+    "@vis.gl/react-google-maps": "^1.5.5",
     "firebase": "^12.1.0",
     "firebase-admin": "^13.4.0",
     "formidable": "^3.5.4",
