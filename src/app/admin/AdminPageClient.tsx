@@ -730,7 +730,22 @@ export default function AdminPageClient({ user }: AdminPageClientProps) {
                     <select value={editingLocation.region} onChange={e => setEditingLocation({...editingLocation, region: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
                       {regions.map(r => <option key={getRegionDocId(r.name)} value={r.name}>{r.name}</option>)}
                     </select>
-                    <select value={editingLocation.locationTypeId} onChange={e => setEditingLocation({...editingLocation, locationTypeId: e.target.value})} required className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md">
+                    <select
+                      value={editingLocation.locationTypeId || ''}
+                      onChange={e => {
+                        const newLocationTypeId = e.target.value;
+                        const newLocationType = locationTypes.find(lt => lt.id === newLocationTypeId);
+                        if (editingLocation) {
+                          setEditingLocation({
+                            ...editingLocation,
+                            locationTypeId: newLocationTypeId,
+                            locationType: newLocationType
+                          });
+                        }
+                      }}
+                      required
+                      className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border rounded-md"
+                    >
                       <option value="" disabled>Select Location Type</option>
                       {locationTypes.map(lt => <option key={lt.id} value={lt.id}>{lt.singular}</option>)}
                     </select>
