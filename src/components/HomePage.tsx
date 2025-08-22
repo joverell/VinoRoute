@@ -66,6 +66,8 @@ export default function HomePage() {
   const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [showSearchResultsPanel, setShowSearchResultsPanel] = useState(false);
   const [showJokeBanner, setShowJokeBanner] = useState(true);
+  const [nameFilter, setNameFilter] = useState('');
+  const [typeFilters, setTypeFilters] = useState<string[]>([]);
 
   const searchParams = useSearchParams();
 
@@ -574,6 +576,22 @@ export default function HomePage() {
     return regionMatch && typeMatch && searchMatch && tagMatch;
   }).sort((a, b) => a.name.localeCompare(b.name));
 
+  const searchTypes = [...new Set(potentialLocations.map(loc => loc.searchType))];
+
+  const handleTypeFilterChange = (type: string) => {
+    setTypeFilters(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  const filteredPotentialLocations = potentialLocations.filter(loc => {
+    const nameMatch = loc.name.toLowerCase().includes(nameFilter.toLowerCase());
+    const typeMatch = typeFilters.length === 0 || typeFilters.includes(loc.searchType);
+    return nameMatch && typeMatch;
+  });
+
   if (!selectedRegion || !isLoaded) {
     return <div>Loading map data...</div>;
   }
@@ -644,7 +662,7 @@ export default function HomePage() {
             onBoundsChanged={setCurrentMapBounds}
             onSearchThisArea={handleSearchThisArea}
             isSearching={isSearching}
-            potentialLocations={potentialLocations}
+            potentialLocations={filteredPotentialLocations}
             onSelectPotentialLocation={handleSelectPotentialLocation}
             highlightedWinery={highlightedWinery}
             selectedWinery={selectedWinery}
@@ -653,7 +671,7 @@ export default function HomePage() {
         <div className="flex-shrink-0 h-full">
           {showSearchResultsPanel ? (
             <SearchResultsPanel
-              potentialLocations={potentialLocations}
+              potentialLocations={filteredPotentialLocations}
               onAddPotentialLocations={handleAddSelectedLocations}
               onClearPotentialLocations={() => {
                 setPotentialLocations([]);
@@ -664,6 +682,11 @@ export default function HomePage() {
               isAddingPotentialLocations={isAddingNewLocations}
               onSelectPotentialLocation={handleSelectPotentialLocation}
               selectedPotentialLocation={selectedPotentialLocation}
+              nameFilter={nameFilter}
+              onNameFilterChange={setNameFilter}
+              typeFilters={typeFilters}
+              onTypeFilterChange={handleTypeFilterChange}
+              searchTypes={searchTypes}
             />
           ) : selectedWinery ? (
             <WineryDetailPanel

@@ -93,13 +93,17 @@ export default function MapComponent(props: MapProps) {
   }, [directions, selectedRegion, mapBounds]);
 
   useEffect(() => {
+    let isCancelled = false;
+
     if (isLoaded && potentialLocations.length > 0) {
       const geocoder = new window.google.maps.Geocoder();
-      const newCoords: {[key: string]: google.maps.LatLngLiteral} = {};
+      const newCoords: { [key: string]: google.maps.LatLngLiteral } = {};
       let processedCount = 0;
 
       potentialLocations.forEach(location => {
         geocoder.geocode({ 'placeId': location.placeId }, (results, status) => {
+          if (isCancelled) return;
+
           if (status === 'OK' && results && results[0]) {
             newCoords[location.placeId] = {
               lat: results[0].geometry.location.lat(),
@@ -108,11 +112,19 @@ export default function MapComponent(props: MapProps) {
           }
           processedCount++;
           if (processedCount === potentialLocations.length) {
-            setPotentialLocationCoords(newCoords);
+            if (!isCancelled) {
+              setPotentialLocationCoords(newCoords);
+            }
           }
         });
       });
+    } else if (isLoaded) {
+      setPotentialLocationCoords({});
     }
+
+    return () => {
+      isCancelled = true;
+    };
   }, [isLoaded, potentialLocations]);
 
   const itineraryWineryIds = new Set(itinerary?.map(stop => stop.winery.id) || []);
