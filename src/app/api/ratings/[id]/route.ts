@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import { initializeFirebaseAdmin } from '@/utils/firebase-admin';
 import { Auth, DecodedIdToken, UserRecord } from 'firebase-admin/auth';
 
+async function getAuthenticatedUser(request: Request, adminAuth: Auth | null): Promise<DecodedIdToken | null> {
+    if (!adminAuth) return null;
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return null;
+    }
+    const token = authHeader.substring(7);
+    try {
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        return decodedToken;
+    } catch (error) {
+        console.error('Error verifying auth token:', error);
+        return null;
+    }
+}
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { adminDb, adminAuth } = initializeFirebaseAdmin();
