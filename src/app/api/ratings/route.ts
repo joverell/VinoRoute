@@ -18,6 +18,70 @@ async function getAuthenticatedUser(request: Request, adminAuth: Auth | null): P
     }
 }
 
+export async function GET(request: Request) {
+    const { adminDb, adminAuth } = initializeFirebaseAdmin();
+    try {
+        const user = await getAuthenticatedUser(request, adminAuth);
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Optional: Add admin check if needed
+        // if (!user.admin) {
+        //     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        // }
+
+        if (!adminDb) {
+            return NextResponse.json({ error: 'Firebase admin not initialized' }, { status: 500 });
+        }
+
+        const ratingsSnapshot = await adminDb.collection('ratings').orderBy('createdAt', 'desc').get();
+
+        const ratings = await Promise.all(ratingsSnapshot.docs.map(async (doc) => {
+            const ratingData = doc.data();
+            let user = null;
+            let winery = null;
+
+            if (ratingData.userId) {
+                try {
+                    const userRecord = await adminAuth.getUser(ratingData.userId);
+                    user = { uid: userRecord.uid, displayName: userRecord.displayName || 'Anonymous' };
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (_e) {
+                    console.warn(`Could not fetch user ${ratingData.userId}`);
+                }
+            }
+
+            if (ratingData.wineryId) {
+                try {
+                    const wineryDoc = await adminDb.collection('locations').doc(ratingData.wineryId).get();
+                    if (wineryDoc.exists) {
+                        winery = { id: wineryDoc.id, name: wineryDoc.data()?.name || 'Unknown Winery' };
+                    }
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (_e) {
+                    console.warn(`Could not fetch winery ${ratingData.wineryId}`);
+                }
+            }
+
+            const { createdAt, ...otherData } = ratingData;
+
+            return {
+                id: doc.id,
+                ...otherData,
+                createdAt: createdAt.toDate().toISOString(),
+                user,
+                winery,
+            };
+        }));
+
+        return NextResponse.json(ratings);
+    } catch (error) {
+        console.error('Error fetching ratings:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
 export async function POST(request: Request) {
   const { adminDb, adminAuth } = initializeFirebaseAdmin();
   try {

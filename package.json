@@ -4,30 +4,36 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed:jokes": "node ./scripts/seed-jokes.js"
   },
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
-    "@react-google-maps/api": "^2.20.7",
+    "@googlemaps/places": "^2.1.0",
+    "@vis.gl/react-google-maps": "^1.5.5",
     "firebase": "^12.1.0",
     "firebase-admin": "^13.4.0",
-    "next": "15.4.6",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "formidable": "^3.5.4",
+    "next": "15.5.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "use-places-autocomplete": "^4.0.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4.1.12",
+    "@types/formidable": "^3.4.5",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^19.1.1",
+    "@types/react-dom": "^19.1.1",
     "dotenv": "^17.2.1",
     "eslint": "^9",
-    "eslint-config-next": "15.4.6",
+    "eslint-config-next": "15.5.0",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "5.9.2"
   }
 }

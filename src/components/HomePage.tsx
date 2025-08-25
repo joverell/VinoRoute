@@ -4,14 +4,19 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import MapComponent from '@/components/Map';
 import Sidebar from '@/components/Sidebar';
-import { Winery, Region, SavedTour } from '@/types';
+import WineryDetailPanel from '@/components/WineryDetailPanel';
+import SearchResultsPanel from '@/components/SearchResultsPanel';
+import { Winery, Region, SavedTour, LocationType } from '@/types';
 import { calculateRoute, ItineraryStop } from '@/utils/itineraryLogic';
 import PrintableItinerary from './PrintableItinerary';
+import JokeOfTheDay from './JokeOfTheDay';
 import Banner from './Banner';
 import { db, auth } from '@/utils/firebase';
 import { collection, getDocs, addDoc, query, where, onSnapshot, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useMapsLibrary } from '@vis.gl/react-google-maps';
+import { PotentialLocation } from '@/app/api/search-area/route';
+import Toast from './Toast';
 
 export interface TripStop {
   winery: Winery;
@@ -20,18 +25,20 @@ export interface TripStop {
 export interface PrepopulatedStop { name: string; address: string; }
 export interface ClickedPoi { name: string; coords: google.maps.LatLngLiteral; }
 
-const MAP_LIBRARIES: ('maps' | 'routes' | 'marker' | 'places')[] = ['maps', 'routes', 'marker', 'places'];
 const LOCAL_STORAGE_KEY = 'wineryTourData';
 
 const AUSTRALIA_REGION: Region = {
   name: "Australia",
   state: "Australia",
+  country: "Australia",
   center: { lat: -25.2744, lng: 133.7751 }, // Center of Australia
 };
 
+// This is the main component for the application.
 export default function HomePage() {
   const [allLocations, setAllLocations] = useState<Winery[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
+  const [locationTypes, setLocationTypes] = useState<LocationType[]>([]);
   const [tripStops, setTripStops] = useState<TripStop[]>([]);
   const [itinerary, setItinerary] = useState<ItineraryStop[] | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -39,40 +46,90 @@ export default function HomePage() {
   const [defaultDuration, setDefaultDuration] = useState<number>(60);
   const [selectedWinery, setSelectedWinery] = useState<Winery | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<Region | null>(null);
-  const [includeDistilleries, setIncludeDistilleries] = useState(true);
   const [clickedPoi, setClickedPoi] = useState<ClickedPoi | null>(null);
   const [prepopulatedStop, setPrepopulatedStop] = useState<PrepopulatedStop | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [savedTours, setSavedTours] = useState<SavedTour[]>([]);
   const [showRegionOverlay, setShowRegionOverlay] = useState(false);
   const [filterMode, setFilterMode] = useState<'region' | 'state' | 'country'>('region');
   const [mapBounds, setMapBounds] = useState<google.maps.LatLngBoundsLiteral | null>(null); // <-- NEW STATE FOR BOUNDS
   const [searchTags, setSearchTags] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [locationTypeFilters, setLocationTypeFilters] = useState<string[]>([]);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [currentMapBounds, setCurrentMapBounds] = useState<google.maps.LatLngBounds | null>(null);
+  const [potentialLocations, setPotentialLocations] = useState<PotentialLocation[]>([]);
+  const [isAddingNewLocations, setIsAddingNewLocations] = useState(false);
+  const [selectedPotentialLocation, setSelectedPotentialLocation] = useState<PotentialLocation | null>(null);
+  const [highlightedWinery, setHighlightedWinery] = useState<Winery | null>(null);
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [showSearchResultsPanel, setShowSearchResultsPanel] = useState(false);
+  const [showJokeBanner, setShowJokeBanner] = useState(true);
+  const [nameFilter, setNameFilter] = useState('');
+  const [typeFilters, setTypeFilters] = useState<string[]>([]);
 
   const searchParams = useSearchParams();
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string,
-    libraries: MAP_LIBRARIES,
-  });
-
   const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
   const geocoderRef = useRef<google.maps.Geocoder | null>(null);
+  const routesLibrary = useMapsLibrary('routes');
+  const geocodingLibrary = useMapsLibrary('geocoding');
 
   useEffect(() => {
-    if (isLoaded) {
-      directionsServiceRef.current = new window.google.maps.DirectionsService();
-      geocoderRef.current = new window.google.maps.Geocoder();
+    if (routesLibrary) {
+      directionsServiceRef.current = new routesLibrary.DirectionsService();
     }
-  }, [isLoaded]);
+    if (geocodingLibrary) {
+      geocoderRef.current = new geocodingLibrary.Geocoder();
+    }
+  }, [routesLibrary, geocodingLibrary]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => { setUser(currentUser); });
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        try {
+          const idTokenResult = await currentUser.getIdTokenResult(true);
+          setIsAdmin(!!idTokenResult.claims.admin);
+        } catch (error) {
+          console.error("Error checking admin status:", error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      const settingsDocRef = doc(db, 'settings', 'site');
+      const docSnap = await getDoc(settingsDocRef);
+      if (docSnap.exists()) {
+        setShowJokeBanner(docSnap.data().showJokeBanner);
+      }
+    };
+    fetchSiteSettings();
+  }, []);
+
+  useEffect(() => {
+    if (selectedWinery) {
+      document.title = `${selectedWinery.name} - ${selectedWinery.region} | VinoRoute`;
+    } else if (selectedRegion) {
+      let titlePart = '';
+      if (filterMode === 'country') {
+        titlePart = 'Australia';
+      } else if (filterMode === 'state') {
+        titlePart = selectedRegion.state;
+      } else {
+        titlePart = selectedRegion.name;
+      }
+      document.title = `${titlePart} | VinoRoute`;
+    }
+  }, [selectedRegion, selectedWinery, filterMode]);
 
   const handleLoadTour = useCallback((tour: SavedTour, locations: Winery[], allRegions: Region[]) => {
     const loadedStops = tour.stops.map(stop => {
@@ -99,12 +156,17 @@ export default function HomePage() {
 
         const stateMap: { [key: string]: string } = { VIC: "Victoria", SA: "South Australia", WA: "Western Australia", NSW: "New South Wales", TAS: "Tasmania", QLD: "Queensland", ACT: "ACT" };
 
+        const locationTypesResponse = await fetch('/api/location-types');
+        const locationTypesData: LocationType[] = await locationTypesResponse.json();
+        setLocationTypes(locationTypesData);
+
         const locationsData = querySnapshot.docs.map(doc => {
           const data = doc.data();
           const regionParts = data.region.split(', ');
           const stateAbbr = regionParts[regionParts.length - 1];
           const state = stateMap[stateAbbr] || "Other";
-          return { ...data, id: doc.id, state: state } as Winery;
+          const locationType = locationTypesData.find((lt: LocationType) => lt.id === data.locationTypeId);
+          return { ...data, id: doc.id, state: state, locationType, tags: data.tags || [] } as Winery;
         });
 
         setAllLocations(locationsData);
@@ -129,7 +191,7 @@ export default function HomePage() {
           const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
           if (savedData) {
             try {
-              const { tripStops: savedStops, startTime, selectedRegionName, includeDistilleries, filterMode, defaultDuration } = JSON.parse(savedData);
+              const { tripStops: savedStops, startTime, selectedRegionName, locationTypeFilter, filterMode, defaultDuration, searchTerm, searchTags } = JSON.parse(savedData);
 
               const rehydratedStops = savedStops.map((stop: TripStop) => {
                 if (stop.winery.type && stop.winery.type !== 'winery') {
@@ -142,8 +204,14 @@ export default function HomePage() {
               setTripStops(rehydratedStops);
               setStartTime(startTime);
               setDefaultDuration(defaultDuration || 60);
-              setIncludeDistilleries(includeDistilleries === undefined ? true : includeDistilleries);
+              if (typeof locationTypeFilter === 'string') {
+                setLocationTypeFilters(locationTypeFilter === 'all' ? [] : [locationTypeFilter]);
+              } else {
+                setLocationTypeFilters(locationTypeFilter || []);
+              }
               setFilterMode(filterMode || 'region');
+              setSearchTerm(searchTerm || '');
+              setSearchTags(searchTags || []);
 
               const regionToSelect = regionsData.find(r => r.name === selectedRegionName) || regionsData[0] || null;
               setSelectedRegion(regionToSelect);
@@ -152,7 +220,12 @@ export default function HomePage() {
               if (regionsData.length > 0) setSelectedRegion(regionsData[0]);
             }
           } else {
+            // Set default region and location type filter if no saved data
             if (regionsData.length > 0) setSelectedRegion(regionsData[0]);
+            const wineryType = locationTypesData.find(lt => lt.singular === 'Winery');
+            if (wineryType) {
+              setLocationTypeFilters([wineryType.id]);
+            }
           }
         }
       } catch (error) {
@@ -172,12 +245,14 @@ export default function HomePage() {
       tripStops,
       startTime,
       selectedRegionName: selectedRegion?.name,
-      includeDistilleries,
+      locationTypeFilters,
       filterMode,
       defaultDuration,
+      searchTerm,
+      searchTags,
     };
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-  }, [tripStops, startTime, selectedRegion, includeDistilleries, filterMode, defaultDuration, allLocations, isInitialLoad]);
+  }, [tripStops, startTime, selectedRegion, locationTypeFilters, filterMode, defaultDuration, searchTerm, searchTags, allLocations, isInitialLoad]);
 
   useEffect(() => {
     if (user && allLocations.length > 0) {
@@ -194,7 +269,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const recalculate = async () => {
-      if (!isLoaded || !directionsServiceRef.current) return;
+      if (!directionsServiceRef.current) return;
       if (tripStops.length < 2 || !startTime) {
         setDirections(null);
         if (tripStops.length === 1 && startTime) {
@@ -216,7 +291,7 @@ export default function HomePage() {
       }
     };
     recalculate();
-  }, [tripStops, startTime, isLoaded]);
+  }, [tripStops, startTime]);
 
   const handleAddToTrip = (winery: Winery) => {
     if (!tripStops.find(stop => stop.winery.id === winery.id)) {
@@ -235,7 +310,6 @@ export default function HomePage() {
       type: 'custom',
       region: selectedRegion.name,
       openingHours: {},
-      visitDuration: defaultDuration,
     };
     const newStop: TripStop = { winery: customWinery, duration: defaultDuration };
     setTripStops(currentStops => [...currentStops, newStop]);
@@ -254,7 +328,6 @@ export default function HomePage() {
           type: 'custom',
           region: selectedRegion.name,
           openingHours: {},
-          visitDuration: duration,
           address: address,
         };
         const newStop: TripStop = { winery: customWinery, duration: duration };
@@ -299,13 +372,71 @@ export default function HomePage() {
     }
   };
 
+  const handleSelectPotentialLocation = (location: PotentialLocation) => {
+    setSelectedPotentialLocation(location);
+    if (geocoderRef.current) {
+        geocoderRef.current.geocode({ placeId: location.placeId }, (results, status) => {
+            if (status === 'OK' && results && results[0]) {
+                const winery: Winery = {
+                    id: location.placeId,
+                    name: location.name,
+                    address: location.address,
+                    coords: {
+                        lat: results[0].geometry.location.lat(),
+                        lng: results[0].geometry.location.lng(),
+                    },
+                    type: 'potential',
+                    region: selectedRegion?.name || '',
+                    tags: [],
+                    openingHours: {},
+                };
+                setHighlightedWinery(winery);
+            }
+        });
+    }
+  };
+
+  const handleAddSelectedLocations = async (selectedLocations: PotentialLocation[]) => {
+    setIsAddingNewLocations(true);
+    try {
+      const addedLocations: Winery[] = [];
+      for (const loc of selectedLocations) {
+        const response = await fetch('/api/admin/add-location', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ placeId: loc.placeId, searchType: loc.searchType }),
+        });
+        if (response.ok) {
+          const newLocation = await response.json();
+          addedLocations.push(newLocation);
+        } else {
+          console.error(`Failed to add location: ${loc.name}`);
+        }
+      }
+      setAllLocations(prev => [...prev, ...addedLocations]);
+      setPotentialLocations(prev =>
+        prev.map(loc =>
+          addedLocations.some(addedLoc => addedLoc.id === loc.placeId)
+            ? { ...loc, isAdded: true }
+            : loc
+        )
+      );
+      setToast({ message: `Successfully added ${addedLocations.length} new locations!`, type: 'success' });
+    } catch (error) {
+      console.error("Error adding selected locations:", error);
+      setToast({ message: "An error occurred while adding new locations.", type: 'error' });
+    } finally {
+      setIsAddingNewLocations(false);
+    }
+  };
+
   const handleSaveTour = async () => {
     if (!user) {
       alert("Please login to save your tour.");
       return;
     }
-    if (tripStops.length === 0) {
-      alert("Please add some stops to your tour before saving.");
+    if (tripStops.length === 0 || !itinerary) {
+      alert("Please add some stops and calculate an itinerary before saving.");
       return;
     }
 
@@ -318,12 +449,20 @@ export default function HomePage() {
           tourName: tourName,
           regionName: selectedRegion?.name,
           startTime: startTime,
-          stops: tripStops.map(stop => ({ 
-            wineryId: stop.winery.id, 
+          stops: tripStops.map(stop => ({
+            wineryId: stop.winery.id,
             duration: stop.duration,
             ...(stop.winery.type === 'custom' && { customData: stop.winery })
           })),
           createdAt: new Date(),
+          itinerary: itinerary.map(stop => ({
+            wineryId: stop.winery.id,
+            wineryName: stop.winery.name,
+            arrivalTime: stop.arrivalTime.toISOString(),
+            departureTime: stop.departureTime.toISOString(),
+            travelTimeToNext: stop.travelTimeToNext,
+            warning: stop.warning,
+          })),
         });
         alert("Tour saved successfully!");
       } catch (error) {
@@ -382,9 +521,47 @@ export default function HomePage() {
     );
   };
 
+  const handleLocationTypeChange = (typeId: string) => {
+    setLocationTypeFilters(prevTypes =>
+      prevTypes.includes(typeId)
+        ? prevTypes.filter(t => t !== typeId)
+        : [...prevTypes, typeId]
+    );
+  };
+
+  const handleSearchThisArea = async () => {
+    if (!currentMapBounds) {
+      alert("Map bounds not set yet. Please move the map first.");
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const response = await fetch('/api/search-area', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bounds: currentMapBounds.toJSON() }),
+      });
+      const newLocations: PotentialLocation[] = await response.json();
+      if (newLocations.length > 0) {
+        setPotentialLocations(prevLocations =>
+          [...prevLocations, ...newLocations.filter(newLoc => !prevLocations.some(prevLoc => prevLoc.placeId === newLoc.placeId))]
+        );
+        setShowSearchResultsPanel(true);
+        setToast({ message: `Found ${newLocations.length} new potential locations!`, type: 'success' });
+      } else {
+        setToast({ message: "No new potential locations found in this area.", type: 'success' });
+      }
+    } catch (error) {
+      console.error("Error searching this area:", error);
+      setToast({ message: "An error occurred while searching this area.", type: 'error' });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const availableWineries = allLocations.filter(w => {
     const inTrip = tripStops.some(stop => stop.winery.id === w.id);
-    if (inTrip) return true;
+    if (inTrip) return false;
 
     let regionMatch;
     if (filterMode === 'country') {
@@ -395,33 +572,53 @@ export default function HomePage() {
       regionMatch = w.region === selectedRegion?.name;
     }
 
-    const typeMatch = includeDistilleries || w.type === 'winery';
+    const typeMatch = locationTypeFilters.length === 0 ||
+      (w.locationTypeId && locationTypeFilters.includes(w.locationTypeId)) ||
+      (!w.locationTypeId && w.type && locationTypeFilters.some(filterId => {
+        const selectedLocationType = locationTypes.find(lt => lt.id === filterId);
+        return selectedLocationType && w.type.toLowerCase() === selectedLocationType.singular.toLowerCase();
+      }));
 
     const searchMatch = searchTerm.length > 0
-      ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      ? w.name.toLowerCase().includes(searchTerm.toLowerCase()) || (w.tags && w.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
       : true;
 
     const tagMatch = searchTags.length > 0
-      ? searchTags.every(tag => w.tags.includes(tag))
+      ? searchTags.every(tag => (w.tags || []).includes(tag))
       : true;
 
     return regionMatch && typeMatch && searchMatch && tagMatch;
+  }).sort((a, b) => a.name.localeCompare(b.name));
+
+  const searchTypes = [...new Set(potentialLocations.map(loc => loc.searchType))];
+
+  const handleTypeFilterChange = (type: string) => {
+    setTypeFilters(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
+  const filteredPotentialLocations = potentialLocations.filter(loc => {
+    const nameMatch = loc.name.toLowerCase().includes(nameFilter.toLowerCase());
+    const typeMatch = typeFilters.length === 0 || typeFilters.includes(loc.searchType);
+    return nameMatch && typeMatch;
   });
 
-  if (!selectedRegion || !isLoaded) {
+  if (!selectedRegion) {
     return <div>Loading map data...</div>;
   }
 
   return (
-    <>
+    <div className="flex flex-col w-screen h-screen">
       <Banner
         user={user}
+        isAdmin={isAdmin}
         showRegionOverlay={showRegionOverlay}
         onToggleRegionOverlay={() => setShowRegionOverlay(!showRegionOverlay)}
-        includeDistilleries={includeDistilleries}
-        onToggleDistilleries={() => setIncludeDistilleries(!includeDistilleries)}
       />
-      <main className="flex w-screen h-screen print:hidden">
+      <main className="flex flex-grow print:hidden overflow-hidden">
         <Sidebar
           user={user}
           onSaveTour={handleSaveTour}
@@ -446,9 +643,12 @@ export default function HomePage() {
           onRegionSelection={handleRegionSelection}
           availableWineries={availableWineries}
           regions={regions}
+          locationTypes={locationTypes}
           prepopulatedStop={prepopulatedStop}
           onClearPrepopulatedStop={() => setPrepopulatedStop(null)}
           filterMode={filterMode}
+          locationTypeFilters={locationTypeFilters}
+          onLocationTypeChange={handleLocationTypeChange}
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
           searchTags={searchTags}
@@ -456,21 +656,70 @@ export default function HomePage() {
         />
         <div className="flex-grow h-full">
           <MapComponent
-            isLoaded={isLoaded}
-            itinerary={itinerary} 
-            directions={directions} 
+            itinerary={itinerary}
+            directions={directions}
             onSelectWinery={setSelectedWinery}
             availableWineries={availableWineries}
             selectedRegion={selectedRegion}
             clickedPoi={clickedPoi}
-            onMapClick={(poi) => setClickedPoi(poi)}
+            onMapClick={(poi) => {
+              setClickedPoi(poi);
+              if (!poi) {
+                setHighlightedWinery(null);
+                setSelectedPotentialLocation(null);
+              }
+            }}
             onAddPoiToTrip={handleAddPoiToTrip}
             showRegionOverlay={showRegionOverlay}
             mapBounds={mapBounds}
+            onBoundsChanged={setCurrentMapBounds}
+            onSearchThisArea={handleSearchThisArea}
+            isSearching={isSearching}
+            potentialLocations={filteredPotentialLocations}
+            onSelectPotentialLocation={handleSelectPotentialLocation}
+            highlightedWinery={highlightedWinery}
+            selectedWinery={selectedWinery}
           />
+        </div>
+        <div className="flex-shrink-0 h-full">
+          {showSearchResultsPanel ? (
+            <SearchResultsPanel
+              potentialLocations={filteredPotentialLocations}
+              onAddPotentialLocations={handleAddSelectedLocations}
+              onClearPotentialLocations={() => {
+                setPotentialLocations([]);
+                setShowSearchResultsPanel(false);
+                setHighlightedWinery(null);
+                setSelectedPotentialLocation(null);
+              }}
+              isAddingPotentialLocations={isAddingNewLocations}
+              onSelectPotentialLocation={handleSelectPotentialLocation}
+              selectedPotentialLocation={selectedPotentialLocation}
+              nameFilter={nameFilter}
+              onNameFilterChange={setNameFilter}
+              typeFilters={typeFilters}
+              onTypeFilterChange={handleTypeFilterChange}
+              searchTypes={searchTypes}
+            />
+          ) : selectedWinery ? (
+            <WineryDetailPanel
+              winery={selectedWinery}
+              onClearSelection={() => {
+                setSelectedWinery(null);
+                setHighlightedWinery(null);
+                setSelectedPotentialLocation(null);
+              }}
+              onAddToTrip={handleAddToTrip}
+              onRemoveFromTrip={handleRemoveFromTrip}
+              isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
+              user={user}
+            />
+          ) : null}
         </div>
       </main>
       <PrintableItinerary itinerary={itinerary} startTime={startTime} />
-    </>
+      {showJokeBanner && <JokeOfTheDay />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    </div>
   );
 }

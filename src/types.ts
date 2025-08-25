@@ -4,9 +4,11 @@ export interface Wine {
   lwin: string;
   name: string;
   type: string;
-  producer: string;
+  producer:string;
   region: string;
   country: string;
+  locationId?: string;
+  locationName?: string;
 }
 
 export interface Rating {
@@ -15,10 +17,23 @@ export interface Rating {
   userId: string;
   rating: number;
   comment?: string;
-  createdAt: {
-    seconds: number;
-    nanoseconds: number;
+  createdAt: string;
+  user?: {
+    uid: string;
+    displayName: string;
   };
+  winery?: {
+    id: string;
+    name: string;
+  };
+}
+
+export interface LocationType {
+  id: string;
+  singular: string;
+  plural: string;
+  icon?: string; // Icon for display in admin UI lists
+  mapImageUrl?: string; // Icon for display on the map
 }
 
 // The Winery and Region interfaces remain the same
@@ -27,11 +42,19 @@ export interface Winery {
   name: string;
   coords: { lat: number; lng: number };
   tags: string[];
-  type: 'winery' | 'distillery' | 'custom';
+  type: 'winery' | 'distillery' | 'custom' | 'potential'; // This will be deprecated
+  locationTypeId?: string;
+  locationType?: LocationType;
   region: string;
   openingHours: { [key: number]: { open: number; close: number } | null };
-  visitDuration: number;
-  address?: string;
+  address?: string | {
+    street_number?: string;
+    suburb?: string;
+    country?: string;
+    postcode?: string;
+    state?: string;
+    street?: string;
+  };
   state?: string;
   url?: string;
   averageRating?: number;
@@ -43,6 +66,7 @@ export interface Region {
   name:string;
   center: { lat: number; lng: number };
   state: string;
+  country: string;
 }
 
 export interface RegionBoundary {
@@ -51,19 +75,44 @@ export interface RegionBoundary {
 }
 
 // This interface is now more specific to handle the Firestore Timestamp
+export interface SavedItineraryStop {
+  wineryId: string | number;
+  wineryName: string;
+  arrivalTime: string; // Storing as ISO string
+  departureTime: string; // Storing as ISO string
+  travelTimeToNext?: { text: string; value: number };
+  warning?: string;
+}
+
 export interface SavedTour {
   id: string;
   userId: string;
   tourName: string;
   regionName: string;
   startTime: string;
-  stops: { 
-    wineryId: string | number; 
+  stops: {
+    wineryId: string | number;
     duration: number;
-    customData?: Winery; 
+    customData?: Winery;
   }[];
   createdAt: { // This is how Firestore Timestamps are structured
     seconds: number;
     nanoseconds: number;
   };
+  itinerary?: SavedItineraryStop[];
+}
+
+export interface Message {
+  id: string;
+  text: string;
+  type: 'success' | 'error';
+  timestamp: { seconds: number; nanoseconds: number; } | Date;
+  userId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface Joke {
+  id: string;
+  text: string;
+  createdAt: string;
 }

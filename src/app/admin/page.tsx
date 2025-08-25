@@ -1,8 +1,13 @@
 'use client';
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
-const AdminPageClient = dynamic(() => import('./AdminPageClient'), { ssr: false })
+const AdminLayout = dynamic(() => import('./AdminLayout'), { ssr: false });
+const AdminPageClient = dynamic(() => import('./AdminPageClient'), { ssr: false });
 
 export default function AdminPage() {
-  return <AdminPageClient />
+  return (
+    <AdminLayout>
+      {(user) => <AdminPageClient user={user} />}
+    </AdminLayout>
+  );
 }

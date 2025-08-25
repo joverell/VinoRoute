@@ -2,16 +2,16 @@
 
 import { auth } from '@/utils/firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, User } from 'firebase/auth';
-import { useAdmin } from '@/hooks/useAdmin';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface AuthProps {
   user: User | null;
+  isAdmin: boolean;
 }
 
-export default function Auth({ user }: AuthProps) {
-  const isAdmin = useAdmin(user);
-
+export default function Auth({ user, isAdmin }: AuthProps) {
+  const pathname = usePathname();
   const handleLogin = async () => {
     const provider = new GoogleAuthProvider();
     try {
@@ -30,11 +30,11 @@ export default function Auth({ user }: AuthProps) {
   };
 
   return (
-    <div className="p-4">
+    <div>
       {user ? (
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">Welcome, {user.displayName}</span>
-          {isAdmin && (
+          {isAdmin && pathname !== '/admin' && (
             <Link href="/admin">
               <span className="px-3 py-1 text-sm font-bold text-white bg-red-500 rounded-lg hover:bg-red-600 cursor-pointer">
                 Admin

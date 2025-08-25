@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Winery } from "@/types";
+import { Winery, LocationType } from "@/types";
 import WineryCard from "./WineryCard";
-import WineryDetail from "./WineryDetail";
 import { ItineraryStop } from '@/utils/itineraryLogic';
 import { TripStop, PrepopulatedStop } from './HomePage';
 import { SavedTour } from '@/types';
@@ -33,6 +32,7 @@ const getNextSaturday10AM = () => {
 const DragHandleIcon = () => ( <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-gray-400"><circle cx="9" cy="6" r="1.5" fill="currentColor"/><circle cx="15" cy="6" r="1.5" fill="currentColor"/><circle cx="9" cy="12" r="1.5" fill="currentColor"/><circle cx="15" cy="12" r="1.5" fill="currentColor"/><circle cx="9" cy="18" r="1.5" fill="currentColor"/><circle cx="15" cy="18" r="1.5" fill="currentColor"/></svg> );
 const InfoIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" /></svg> );
 const formatTime = (date: Date) => date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' });
+const formatTimeFromString = (isoString: string) => new Date(isoString).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' });
 const formatSavedDate = (timestamp: { seconds: number }) => new Date(timestamp.seconds * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 
 interface SidebarProps {
@@ -59,9 +59,12 @@ interface SidebarProps {
   onRegionSelection: (value: string) => void;
   availableWineries: Winery[];
   regions: Region[];
+  locationTypes: LocationType[];
   prepopulatedStop: PrepopulatedStop | null;
   onClearPrepopulatedStop: () => void;
   filterMode: 'region' | 'state' | 'country';
+  locationTypeFilters: string[];
+  onLocationTypeChange: (type: string) => void;
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
   searchTags: string[];
@@ -74,8 +77,9 @@ export default function Sidebar({
   startTime, onStartTimeChange, onOptimizeRoute, defaultDuration,
   onDefaultDurationChange, onDurationChange, selectedWinery, onSelectWinery, onAddCustomStop,
   selectedRegion, onRegionSelection,
-  availableWineries, regions, prepopulatedStop, onClearPrepopulatedStop,
+  availableWineries, regions, locationTypes, prepopulatedStop, onClearPrepopulatedStop,
   filterMode,
+  locationTypeFilters, onLocationTypeChange,
   searchTerm, onSearchTermChange, searchTags, onTagFilterChange
 }: SidebarProps) {
   const [view, setView] = useState<'planner' | 'saved'>('planner');
@@ -152,12 +156,11 @@ export default function Sidebar({
           <div className="p-4 mb-4 border rounded-lg">
             <h2 className="text-xl font-bold text-gray-800">Plan Your Tour</h2>
             <div className="my-4">
-              <label htmlFor="region" className="block text-sm font-medium text-gray-700">Region</label>
               <select
                 id="region" name="region"
                 value={selectValue}
                 onChange={(e) => onRegionSelection(e.target.value)}
-                className="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded-md shadow-sm"
+                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm"
               >
                 <option value="Australia">All of Australia</option>
                 {Object.entries(groupedRegions).map(([state, stateRegions]) => (
@@ -167,6 +170,24 @@ export default function Sidebar({
                   </optgroup>
                 ))}
               </select>
+              <div className="mt-4">
+                <span className="text-sm font-medium text-gray-700">Filter by Type</span>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {locationTypes.map(lt => (
+                    <button
+                      key={lt.id}
+                      onClick={() => onLocationTypeChange(lt.id)}
+                      className={`px-3 py-1 text-sm rounded-full ${
+                        locationTypeFilters.includes(lt.id)
+                          ? 'bg-rose-500 text-white hover:bg-rose-600'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {lt.singular}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4 my-4">
               <div>
@@ -268,66 +289,54 @@ export default function Sidebar({
           )}
 
           <div>
-            {selectedWinery ? (
-              <WineryDetail
-                winery={selectedWinery}
-                onClearSelection={() => onSelectWinery(null)}
-                onAddToTrip={onAddToTrip}
-                onRemoveFromTrip={onRemoveFromTrip}
-                isInTrip={tripStops.some(stop => stop.winery.id === selectedWinery.id)}
-                user={user}
-              />
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-700">Available Locations</h3>
-                  <div className="flex items-center gap-4">
-                    <button onClick={() => setShowCustomForm(!showCustomForm)} className="px-2 py-1 text-xs font-bold text-teal-700 bg-teal-100 rounded-lg hover:bg-teal-200">
-                      {showCustomForm ? 'Cancel' : '+ Custom Stop'}
-                    </button>
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-gray-700">Available Locations ({availableWineries.length})</h3>
+                <div className="flex items-center gap-4">
+                  <button onClick={() => setShowCustomForm(!showCustomForm)} className="px-2 py-1 text-xs font-bold text-teal-700 bg-teal-100 rounded-lg hover:bg-teal-200">
+                    {showCustomForm ? 'Cancel' : '+ Custom Stop'}
+                  </button>
+                </div>
+              </div>
+              {showCustomForm && <AddCustomStopForm onAdd={handleAddCustomAndClose} onCancel={handleCancelCustomForm} defaultDuration={defaultDuration} prepopulatedData={prepopulatedStop} />}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search wineries or tags..."
+                  value={searchTerm}
+                  onChange={(e) => onSearchTermChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                />
+                {searchTags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="text-sm font-medium text-gray-700">Filtering by:</span>
+                    {searchTags.map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => onTagFilterChange(tag)}
+                        className="px-2 py-1 text-xs text-white bg-rose-500 rounded-full hover:bg-rose-600"
+                      >
+                        {tag} &times;
+                      </button>
+                    ))}
                   </div>
-                </div>
-                {showCustomForm && <AddCustomStopForm onAdd={handleAddCustomAndClose} onCancel={handleCancelCustomForm} defaultDuration={defaultDuration} prepopulatedData={prepopulatedStop} />}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    placeholder="Search wineries or tags..."
-                    value={searchTerm}
-                    onChange={(e) => onSearchTermChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                )}
+              </div>
+              <div className="flex flex-col gap-4 mt-4">
+                {availableWineries.map((winery) => (
+                  <WineryCard
+                    key={winery.id}
+                    winery={winery}
+                    onAddToTrip={onAddToTrip}
+                    onRemoveFromTrip={onRemoveFromTrip}
+                    isInTrip={tripStops.some(stop => stop.winery.id === winery.id)}
+                    isSelected={selectedWinery?.id === winery.id}
+                    onSelect={onSelectWinery}
+                    onTagClick={onTagFilterChange}
                   />
-                  {searchTags.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="text-sm font-medium text-gray-700">Filtering by:</span>
-                      {searchTags.map(tag => (
-                        <button
-                          key={tag}
-                          onClick={() => onTagFilterChange(tag)}
-                          className="px-2 py-1 text-xs text-white bg-rose-500 rounded-full hover:bg-rose-600"
-                        >
-                          {tag} &times;
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col gap-4 mt-4">
-                  {availableWineries.map((winery) => (
-                    <WineryCard
-                      key={winery.id}
-                      winery={winery}
-                      onAddToTrip={onAddToTrip}
-                      onRemoveFromTrip={onRemoveFromTrip}
-                      isInTrip={tripStops.some(stop => stop.winery.id === winery.id)}
-                      isSelected={false}
-
-                      onSelect={onSelectWinery}
-                      onTagClick={onTagFilterChange}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+                ))}
+              </div>
+            </>
           </div>
         </div>
       )}
@@ -345,6 +354,23 @@ export default function Sidebar({
                     <span>{tour.regionName}</span>
                     <span>Saved: {formatSavedDate(tour.createdAt)}</span>
                   </div>
+
+                  {tour.itinerary && tour.itinerary.length > 0 ? (
+                    <div className="mt-2 text-sm text-gray-800">
+                      <p>
+                        <strong>{tour.itinerary.length} stop{tour.itinerary.length > 1 ? 's' : ''}:</strong>{' '}
+                        {formatTimeFromString(tour.itinerary[0].arrivalTime)} -{' '}
+                        {formatTimeFromString(tour.itinerary[tour.itinerary.length - 1].departureTime)}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-sm text-gray-800">
+                      <p>
+                        <strong>{tour.stops.length} stop{tour.stops.length > 1 ? 's' : ''}</strong>
+                      </p>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-3 gap-2 mt-4">
                     <button onClick={() => handleShare(tour.id)} className="w-full px-3 py-1 text-sm font-bold text-white bg-blue-500 rounded-lg hover:bg-blue-600">Share</button>
                     <button onClick={() => onLoadTour(tour)} className="w-full px-3 py-1 text-sm font-bold text-white bg-teal-500 rounded-lg hover:bg-teal-600">Load</button>

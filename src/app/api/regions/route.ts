@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const regionData: Region = await request.json();
 
     // Basic validation
-    if (!regionData.name || !regionData.center || !regionData.state) {
+    if (!regionData.name || !regionData.center || !regionData.state || !regionData.country) {
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
